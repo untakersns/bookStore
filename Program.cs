@@ -1,7 +1,7 @@
-﻿using System.Net;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 string filePath = "books.txt";
+string filePath2 = "salesCards.txt";
 
 while (true)
 {
@@ -23,6 +23,36 @@ while (true)
                 );
             }).ToList();
 
+        //чтение скидочных карт
+        List<SalesCard> salesCards = File.ReadLines(filePath2)
+            .Where(line => !string.IsNullOrEmpty(line))
+            .Select(line =>
+            {
+                string[] fields = line.Split(';');
+
+                return new SalesCard
+                (
+                    int.Parse(fields[0].Trim()),
+                    int.Parse(fields[1].Trim())
+                );
+            }).ToList();
+
+        // список купонов с фиксированной скидкой
+        List<AmountCoupon> amountCoupons =
+        [
+            new AmountCoupon(1, 100m),
+            new AmountCoupon(2, 250m),
+            new AmountCoupon(3, 500m)
+        ];
+
+        // список купонов с процентной скидкой
+        List<PercentCoupon> percentCoupons =
+        [
+            new PercentCoupon(1, 5),
+            new PercentCoupon(2, 10),
+            new PercentCoupon(3, 15)
+        ];
+
         //вывод из списка
         Console.WriteLine("Список имеющихся книг:");
         foreach (var book in books)
@@ -32,7 +62,8 @@ while (true)
 
         WishList wishList = new();
 
-        List<Delivery> deliveryList = [];
+        List<Order> orders = []; //хранит все заказы
+        Order? currentOrder = null; //последний созданный заказ
 
         while (true)
         {
@@ -40,8 +71,8 @@ while (true)
                 "\n\t1. Добавить книги в корзину" +
                 "\n\t2. Удалить книги из корзины" +
                 "\n\t3. Вывести счет-фактуру" +
-                "\n\t4. Добавить доставку" +
-                "\n\t5. Список доставок", Console.ForegroundColor = ConsoleColor.Yellow);
+                "\n\t4. Создать заказ" +
+                "\n\t5. Список заказов", Console.ForegroundColor = ConsoleColor.Yellow);
             Console.ResetColor();
 
             switch (int.Parse(Console.ReadLine()!))
@@ -55,39 +86,86 @@ while (true)
                     break;
 
                 case 3:
-                    wishList.CalculateResult();
+                    if (currentOrder == null)
+                    {
+                        Console.WriteLine("Сначала создайте заказ!");
+                        break;
+                    }
+
+                    Console.WriteLine("\nСчёт-фактура", Console.ForegroundColor = ConsoleColor.Yellow);
+                    Console.ResetColor();
+                    Console.WriteLine("\nСписок товаров:");
+
+                    foreach (Book book in currentOrder.WishList.wishList!)
+                    {
+                        Console.WriteLine(book);
+                    }
+
+                    Console.WriteLine("\nСтоимость книг: " +
+                        $"{currentOrder.BooksCost} руб.");
+
+                    Console.WriteLine("Применённая скидка: " +
+                        currentOrder.DiscountDescription);
+
+                    Console.WriteLine("Размер скидки: " +
+                        $"{currentOrder.DiscountAmount} руб.");
+
+                    Console.WriteLine("\nИнформация о доставке:");
+                    Console.WriteLine(currentOrder.Delivery);
+
+                    Console.WriteLine("\nИтого к оплате: " +
+                        $"{currentOrder.Result()} руб.", Console.ForegroundColor = ConsoleColor.Yellow);
+                    Console.ResetColor();
                     break;
 
                 case 4:
-                    if(wishList.wishList.Count == 0)
+                    if (wishList.wishList.Count == 0)
                     {
-                        Console.WriteLine("Ваша корзина пуста!", Console.ForegroundColor = ConsoleColor.Red);
-                        Console.ResetColor();
+                        Console.WriteLine("Ваша корзина пуста!");
                         break;
                     }
-                    
-                    Console.WriteLine("Введите адрес доставки: ", Console.ForegroundColor = ConsoleColor.Yellow);
-                    Console.ResetColor();
-                    string address = Console.ReadLine()!;
 
-                    Console.WriteLine("Введите номер телефона: ", Console.ForegroundColor = ConsoleColor.Yellow);
-                    Console.ResetColor();
-                    string number = Delivery.AddNumber();
+                    // выбор скидки
+                    IDiscountStrategy? discountStrategy = SelectDiscountStrategy(salesCards, amountCoupons, percentCoupons);
 
-                    Console.WriteLine("Введите адрес электронной почты: ", Console.ForegroundColor = ConsoleColor.Yellow);
-                    Console.ResetColor();
-                    string email = Delivery.AddEmail();
+                    if (discountStrategy == null)
+                    {
+                        Console.WriteLine("Создание заказа отменено!");
+                        break;
+                    }
 
-                    deliveryList.Add(new Delivery(address, number, email));
+                    // создание заказа вместе с доставкой
+                    Order order = new(wishList, Delivery.AddDelivery(), discountStrategy);
 
-                    Console.WriteLine("Запись успешно добавлена!");
+                    orders.Add(order);
+                    currentOrder = order;
+
+                    // создаём новую корзину для следующего заказа
+                    wishList = new WishList();
+
+                    Console.WriteLine("Заказ успешно создан!");
                     break;
 
                 case 5:
-                    foreach (Delivery delivery in deliveryList)
+                    if (orders.Count == 0)
                     {
-                        Console.WriteLine(delivery); 
+                        Console.WriteLine("Заказов пока нет!");
+                        break;
                     }
+
+                    for (int i = 0; i < orders.Count; i++)
+                    {
+                        Console.WriteLine($"\nЗаказ #{i + 1}");
+
+                        Console.WriteLine();
+
+                        Console.WriteLine(orders[i].Delivery);
+
+                        Console.WriteLine(
+                            $"Итого: {orders[i].Result()} руб."
+                        );
+                    }
+
                     break;
 
                 default:
@@ -115,14 +193,112 @@ while (true)
     }
 }
 
-decimal CalculateCost(List<Book> wishList)
+
+//метод для возвращения выбранной стратегии скидки для последующего расчета
+static IDiscountStrategy? SelectDiscountStrategy(List<SalesCard> salesCards, List<AmountCoupon> amountCoupons, List<PercentCoupon> percentCoupons)
 {
-    decimal fullPrice = 0.0m;
-    foreach (var book in wishList)
+    Console.WriteLine("\nВыберите тип скидки:", Console.ForegroundColor = ConsoleColor.Yellow);
+    Console.ResetColor();
+    Console.WriteLine("0. Без скидки");
+    Console.WriteLine("1. Скидочная карта");
+    Console.WriteLine("2. Купон на фиксированную сумму");
+    Console.WriteLine("3. Купон на процент");
+
+    if (!int.TryParse(Console.ReadLine(), out int choice))
     {
-        fullPrice += book.Price;
+        Console.WriteLine("Неверный формат ввода!", Console.ForegroundColor = ConsoleColor.Red);
+        Console.ResetColor();
+        return null;
     }
-    return fullPrice;
+
+    switch (choice)
+    {
+        case 0:
+            return new NoDiscountStrategy();
+
+        case 1:
+            Console.WriteLine("Введите ID скидочной карты:");
+
+            if (!int.TryParse(Console.ReadLine(), out int cardId))
+            {
+                Console.WriteLine("Неверный ID!");
+                return null;
+            }
+
+            SalesCard? card = salesCards
+                .FirstOrDefault(c => c.Id == cardId);
+
+            if (card == null)
+            {
+                Console.WriteLine("Скидочная карта не найдена!");
+                return null;
+            }
+
+            return new SalesCardDiscountStrategy(card);
+
+        case 2:
+            Console.WriteLine("Доступные купоны:");
+
+            foreach (AmountCoupon coupon in amountCoupons)
+            {
+                Console.WriteLine(
+                    $"ID: {coupon.Id}, скидка: {coupon.DiscountAmount} руб."
+                );
+            }
+
+            Console.WriteLine("Введите ID купона:");
+
+            if (!int.TryParse(Console.ReadLine(), out int amountId))
+            {
+                Console.WriteLine("Неверный ID!");
+                return null;
+            }
+
+            AmountCoupon? amountCoupon = amountCoupons
+                .FirstOrDefault(c => c.Id == amountId);
+
+            if (amountCoupon == null)
+            {
+                Console.WriteLine("Купон не найден!");
+                return null;
+            }
+
+            return new CouponAmountDiscountStrategy(amountCoupon);
+
+        case 3:
+            Console.WriteLine("Доступные купоны:");
+
+            foreach (PercentCoupon coupon in percentCoupons)
+            {
+                Console.WriteLine(
+                    $"ID: {coupon.Id}, скидка: {coupon.DiscountPercent}%"
+                );
+            }
+
+            Console.WriteLine("Введите ID купона:");
+
+            if (!int.TryParse(Console.ReadLine(), out int percentId))
+            {
+                Console.WriteLine("Неверный ID!");
+                return null;
+            }
+
+            PercentCoupon? percentCoupon = percentCoupons
+                .FirstOrDefault(c => c.Id == percentId);
+
+            if (percentCoupon == null)
+            {
+                Console.WriteLine("Купон не найден!");
+                return null;
+            }
+
+            return new CouponPercentDiscountStrategy(percentCoupon);
+
+        default:
+            Console.WriteLine("Неверный вариант выбора!" , Console.ForegroundColor = ConsoleColor.Red);
+            Console.ResetColor();
+            return null;
+    }
 }
 
 public class Book(int id, string name, string author, decimal price)
@@ -148,9 +324,6 @@ public class WishList
 {
     public List<Book>? wishList = [];
 
-    private List<SalesCard>? salesCards = [];
-
-    private readonly string filePath2 = "salesCards.txt";
     public void AddBook(List<Book> books)
     {
         Console.WriteLine("Сформируйте корзину!");
@@ -163,7 +336,7 @@ public class WishList
             {
                 Console.WriteLine("Ваша корзина на данный момент: ", Console.ForegroundColor = ConsoleColor.Yellow);
                 Console.ResetColor();
-                foreach(Book book in wishList)
+                foreach (Book book in wishList)
                 {
                     Console.WriteLine("\t " + book);
                 }
@@ -223,93 +396,6 @@ public class WishList
             }
         }
     }
-
-    public void CalculateResult()
-    {
-        if(wishList.Count == 0)
-        {
-            Console.WriteLine("Ваша корзина пуста! Добавьте книги в корзину.", Console.ForegroundColor = ConsoleColor.Red);
-            Console.ResetColor();
-            return;
-        }
-
-        
-        Console.WriteLine("Счет фактура", Console.ForegroundColor = ConsoleColor.Yellow);
-        Console.ResetColor();
-        Console.WriteLine("Имеется ли у вас скидочная карта? (0 - нет; 1 - да)");
-        switch (int.Parse(Console.ReadLine()!))
-        {
-            case 0:
-                //вывод счет-фактуры без скидок
-                Console.WriteLine("Стоимость книг:");
-                foreach (var book in wishList)
-                {
-                    Console.WriteLine(book);
-                }
-                Console.Write("Итого: ");
-                decimal fullPrice = 0.0m;
-                foreach (var book in wishList)
-                {
-                    fullPrice += book.Price;
-                }
-                Console.WriteLine($"{fullPrice} руб.");
-                break;
-
-            //case 1:
-            //    //чтение и ввод в список скидочных карт
-            //    salesCards = File.ReadLines(filePath2)
-            //        .Where(line => !string.IsNullOrEmpty(line))
-            //        .Select(line =>
-            //        {
-            //            string[] fields = line.Split(';');
-
-            //            return new SalesCard
-            //            (
-            //                int.Parse(fields[0].Trim()),
-            //                int.Parse(fields[1].Trim())
-            //            );
-            //        }).ToList();
-
-            //    Console.WriteLine("Введите id желаемой скидочной карты: (введите 0 при отсутствии карты)", Console.ForegroundColor = ConsoleColor.Yellow);
-            //    Console.ResetColor();
-            //    int cardId = int.Parse(Console.ReadLine()!);
-            //    if (cardId == 0)
-            //    {
-            //        break;
-            //    }
-            //    SalesCard? existingCard = salesCards.FirstOrDefault(card => card.Id == cardId);
-            //    if (existingCard == null)
-            //    {
-            //        Console.WriteLine("Скидочная карта не найдена!", Console.BackgroundColor = ConsoleColor.Red);
-            //        Console.ResetColor();
-            //    }
-            //    else
-            //    {
-            //        //счет-фактура со скидкой
-            //        Console.WriteLine("Счет фактура с учетом скидочной карты", Console.ForegroundColor = ConsoleColor.Yellow);
-            //        Console.ResetColor();
-            //        Console.WriteLine("Стоимость книг:");
-            //        foreach (var book in wishList)
-            //        {
-            //            Console.WriteLine(book);
-            //        }
-            //        Console.Write("Итого: ");
-            //        decimal fullPriceWithSale = 0.0m;
-            //        foreach (var book in wishList)
-            //        {
-            //            fullPriceWithSale += book.Price;
-            //        }
-            //        Console.WriteLine($"{fullPriceWithSale - (fullPriceWithSale * existingCard.SalesAmount / 100.0m)} руб. (Скидка {existingCard.SalesAmount}%)");
-            //        break;
-            //    }
-            //    break;
-
-            default:
-                Console.WriteLine("Неверный параметр ввода!", Console.BackgroundColor = ConsoleColor.Red);
-                Console.ResetColor();
-                break;
-        }
-    }
 }
 
 public class Delivery(string address, string phoneNumber, string email)
@@ -323,7 +409,7 @@ public class Delivery(string address, string phoneNumber, string email)
     {
         Regex isPhoneNumber = new(@"^\+375\(0[\d]{2}\)[\d]{3}-[\d]{2}-[\d]{2}$");
         Regex isPhoneNumber2 = new(@"^8-\([\d]{3}\)-[\d]{3}-[\d]{2}-[\d]{2}$");
-        
+
         while (true)
         {
             string input = Console.ReadLine()!;
@@ -339,6 +425,7 @@ public class Delivery(string address, string phoneNumber, string email)
             }
         }
     }
+
     public static string AddEmail()
     {
         Regex isEmail = new(@"^[^\s@]+@[^\s@]+\.[^\s@]+$");
@@ -359,8 +446,133 @@ public class Delivery(string address, string phoneNumber, string email)
         }
     }
 
+    public static Delivery AddDelivery()
+    {
+        Console.WriteLine("Введите адрес доставки: ", Console.ForegroundColor = ConsoleColor.Yellow);
+        Console.ResetColor();
+        string address = Console.ReadLine()!;
+
+        Console.WriteLine("Введите номер телефона: ", Console.ForegroundColor = ConsoleColor.Yellow);
+        Console.ResetColor();
+        string number = Delivery.AddNumber();
+
+        Console.WriteLine("Введите адрес электронной почты: ", Console.ForegroundColor = ConsoleColor.Yellow);
+        Console.ResetColor();
+        string email = Delivery.AddEmail();
+
+        return new(address, number, email);
+    }
+
     public override string ToString()
     {
         return $"Адрес: {Address}, Номер телефона: {PhoneNumber}, Email: {Email}, Стоимость доставки: {DeliveryCost}";
+    }
+}
+
+public abstract class Coupon(int id)
+{
+    public int Id { get; private set; } = id;
+}
+
+public class AmountCoupon(int id, decimal discountAmount) : Coupon(id)
+{
+    public decimal DiscountAmount { get; set; } = discountAmount;
+}
+
+public class PercentCoupon(int id, int discountPercent) : Coupon(id)
+{
+    public int DiscountPercent { get; set; } = discountPercent;
+}
+
+public interface IDiscountStrategy
+{
+    decimal ApplyDiscount(decimal total);
+
+    string Description { get; }
+}
+
+public class NoDiscountStrategy : IDiscountStrategy
+{
+    public string Description => "Без скидки";
+
+    public decimal ApplyDiscount(decimal total)
+    {
+        return total;
+    }
+}
+
+public class SalesCardDiscountStrategy(SalesCard salesCard) : IDiscountStrategy
+{
+    private readonly SalesCard salesCard = salesCard;
+
+    public string Description => $"Скидочная карта #{salesCard.Id} ({salesCard.SalesAmount}%)";
+
+    public decimal ApplyDiscount(decimal total)
+    {
+        decimal discount = total * salesCard.SalesAmount / 100m;
+        return total - discount;
+    }
+}
+
+public class CouponAmountDiscountStrategy(AmountCoupon coupon) : IDiscountStrategy
+{
+    private readonly AmountCoupon Coupon = coupon;
+
+    public string Description => $"Купон #{Coupon.Id} (-{Coupon.DiscountAmount} руб.)";
+
+    public decimal ApplyDiscount(decimal total)
+    {
+        return Math.Max(0m, total - Coupon.DiscountAmount);
+    }
+}
+
+public class CouponPercentDiscountStrategy(PercentCoupon coupon) : IDiscountStrategy
+{
+    private readonly PercentCoupon Coupon = coupon;
+
+    public string Description => $"Купон #{Coupon.Id} (-{Coupon.DiscountPercent}%)";
+
+    public decimal ApplyDiscount(decimal total)
+    {
+        decimal discount = total * Coupon.DiscountPercent / 100m;
+        return total - discount;
+    }
+}
+
+public class Order(WishList wishList, Delivery delivery, IDiscountStrategy discountStrategy)
+{
+    public WishList WishList { get; } = wishList;
+    public Delivery Delivery { get; } = delivery;
+
+    private IDiscountStrategy DiscountStrategy = discountStrategy;
+
+    //общая стоимость книг в корзине
+    private static decimal CalculateCost(List<Book> wishList)
+    {
+        decimal fullPrice = 0.0m;
+
+        foreach (var book in wishList)
+        {
+            fullPrice += book.Price;
+        }
+
+        return fullPrice;
+    }
+
+    //запись результата в отдельную переменную
+    public decimal BooksCost => CalculateCost(WishList.wishList!);
+
+    //размер скидки для отображения в счет-фактуре для данного заказа
+    public decimal DiscountAmount => BooksCost - DiscountStrategy.ApplyDiscount(BooksCost);
+
+    //тип примененной скидки в счет-фактуре
+    public string DiscountDescription => DiscountStrategy.Description;
+
+    //расчет итоговой цены после применения скидки с учетом стоимости доставки
+    public decimal Result()
+    {
+        decimal discountedPrice = DiscountStrategy.ApplyDiscount(BooksCost);
+
+        return discountedPrice + Delivery.DeliveryCost;
     }
 }
