@@ -65,8 +65,6 @@ while (true)
                         Console.ResetColor();
                         break;
                     }
-
-                    
                     
                     Console.WriteLine("Введите адрес доставки: ", Console.ForegroundColor = ConsoleColor.Yellow);
                     Console.ResetColor();
@@ -80,7 +78,7 @@ while (true)
                     Console.ResetColor();
                     string email = Delivery.AddEmail();
 
-                    deliveryList.Add(new Delivery(address, number, email, CalculateCost(wishList.wishList)));
+                    deliveryList.Add(new Delivery(address, number, email));
 
                     Console.WriteLine("Запись успешно добавлена!");
                     break;
@@ -314,17 +312,17 @@ public class WishList
     }
 }
 
-public class Delivery(string address, string phoneNumber, string email, decimal deliveryCost)
+public class Delivery(string address, string phoneNumber, string email)
 {
     public string Address { get; set; } = address;
     public string PhoneNumber { get; set; } = phoneNumber;
     public string Email { get; set; } = email;
-    public decimal DeliveryCost { get; set; } = deliveryCost;
+    public decimal DeliveryCost { get; private set; } = 500.0m;
 
     public static string AddNumber()
     {
-        Regex isPhoneNumber = new(@"^\+375\([\d]{3}\)[\d]{3}-[\d]{2}-[\d]{2}$");
-        Regex isPhoneNumber2 = new(@"^8\s[\d]{3}\s[\d]{3}\s[\d]{2}\s[\d]{2}$");
+        Regex isPhoneNumber = new(@"^\+375\(0[\d]{2}\)[\d]{3}-[\d]{2}-[\d]{2}$");
+        Regex isPhoneNumber2 = new(@"^8-\([\d]{3}\)-[\d]{3}-[\d]{2}-[\d]{2}$");
         
         while (true)
         {
