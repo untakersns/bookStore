@@ -415,9 +415,9 @@ public class WishList
 
 public class Delivery(string address, string phoneNumber, string email)
 {
-    public string Address { get; set; } = address;
-    public string PhoneNumber { get; set; } = phoneNumber;
-    public string Email { get; set; } = email;
+    private string Address { get; set; } = address;
+    private string PhoneNumber { get; set; } = phoneNumber;
+    private string Email { get; set; } = email;
     public decimal DeliveryCost { get; private set; } = 500.0m;
 
     public static string AddNumber()
