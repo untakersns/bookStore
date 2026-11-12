@@ -2,6 +2,9 @@
 
 string filePath = "books.txt";
 string filePath2 = "salesCards.txt";
+string filePath3 = "amountCoupons.txt";
+string filePath4 = "percentCoupons.txt";
+
 
 while (true)
 {
@@ -38,20 +41,32 @@ while (true)
             }).ToList();
 
         // список купонов с фиксированной скидкой
-        List<AmountCoupon> amountCoupons =
-        [
-            new AmountCoupon(1, 100m),
-            new AmountCoupon(2, 250m),
-            new AmountCoupon(3, 500m)
-        ];
+        List<AmountCoupon> amountCoupons = File.ReadAllLines(filePath3)
+            .Where(line => !string.IsNullOrEmpty(line))
+            .Select(line =>
+            {
+                string[] fields = line.Split(';');
+
+                return new AmountCoupon
+                (
+                    int.Parse(fields[0].Trim()),
+                    int.Parse(fields[1].Trim())
+                );
+            }).ToList();
 
         // список купонов с процентной скидкой
-        List<PercentCoupon> percentCoupons =
-        [
-            new PercentCoupon(1, 5),
-            new PercentCoupon(2, 10),
-            new PercentCoupon(3, 15)
-        ];
+        List<PercentCoupon> percentCoupons = File.ReadAllLines(filePath4)
+            .Where(line => !string.IsNullOrEmpty(line))
+            .Select(line =>
+            {
+                string[] fields = line.Split(';');
+
+                return new PercentCoupon
+                (
+                    int.Parse(fields[0].Trim()),
+                    int.Parse(fields[1].Trim())
+                );
+            }).ToList();
 
         //вывод из списка
         Console.WriteLine("Список имеющихся книг:");
@@ -503,13 +518,13 @@ public class NoDiscountStrategy : IDiscountStrategy
 
 public class SalesCardDiscountStrategy(SalesCard salesCard) : IDiscountStrategy
 {
-    private readonly SalesCard salesCard = salesCard;
+    private readonly SalesCard SalesCard = salesCard;
 
-    public string Description => $"Скидочная карта #{salesCard.Id} ({salesCard.SalesAmount}%)";
+    public string Description => $"Скидочная карта #{SalesCard.Id} ({SalesCard.SalesAmount}%)";
 
     public decimal ApplyDiscount(decimal total)
     {
-        decimal discount = total * salesCard.SalesAmount / 100m;
+        decimal discount = total * SalesCard.SalesAmount / 100m;
         return total - discount;
     }
 }
@@ -544,7 +559,7 @@ public class Order(WishList wishList, Delivery delivery, IDiscountStrategy disco
     public WishList WishList { get; } = wishList;
     public Delivery Delivery { get; } = delivery;
 
-    private IDiscountStrategy DiscountStrategy = discountStrategy;
+    private readonly IDiscountStrategy DiscountStrategy = discountStrategy;
 
     //общая стоимость книг в корзине
     private static decimal CalculateCost(List<Book> wishList)
