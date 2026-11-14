@@ -4,81 +4,83 @@ using System.Text;
 
 namespace bookStore.Entities
 {
-    public class DiscountSelector
-    {
-        //метод для возвращения выбранной стратегии скидки для последующего расчета
-        public static IDiscountStrategy? SelectDiscountStrategy(List<SalesCard> salesCards, List<AmountCoupon> amountCoupons, List<PercentCoupon> percentCoupons)
-        {
-            //Console.WriteLine("\nВыберите тип скидки:", Console.ForegroundColor = ConsoleColor.Yellow);
-            //Console.ResetColor();
-            //Console.WriteLine("0. Без скидки");
-            //Console.WriteLine("1. Скидочная карта");
-            //Console.WriteLine("2. Купон на фиксированную сумму");
-            //Console.WriteLine("3. Купон на процент");
+    //public class DiscountSelector
+    //{
+    //    //метод для возвращения выбранной стратегии скидки для последующего расчета
+    //    public static IDiscountStrategy? SelectDiscountStrategy(List<SalesCard> salesCards, List<AmountCoupon> amountCoupons, List<PercentCoupon> percentCoupons)
+    //    {
+    //        //Console.WriteLine("\nВыберите тип скидки:", Console.ForegroundColor = ConsoleColor.Yellow);
+    //        //Console.ResetColor();
+    //        //Console.WriteLine("0. Без скидки");
+    //        //Console.WriteLine("1. Скидочная карта");
+    //        //Console.WriteLine("2. Купон на фиксированную сумму");
+    //        //Console.WriteLine("3. Купон на процент");
 
-            if (!int.TryParse(Console.ReadLine(), out int choice))
-            {
-                return null;
-            }
+    //        if (!int.TryParse(Console.ReadLine(), out int choice))
+    //        {
+    //            return null;
+    //        }
 
-            switch (choice)
-            {
-                case 0:
-                    return new NoDiscountStrategy();
+    //        switch (choice)
+    //        {
+    //            case 0:
+    //                return new NoDiscountStrategy();
 
-                case 1:
-                    if (!int.TryParse(Console.ReadLine(), out int cardId))
-                    {
-                        return null;
-                    }
+    //            case 1:
+    //                if (!int.TryParse(Console.ReadLine(), out int cardId))
+    //                {
+    //                    return null;
+    //                }
 
-                    SalesCard? card = salesCards
-                        .FirstOrDefault(c => c.Id == cardId);
+    //                SalesCard? card = salesCards
+    //                    .FirstOrDefault(c => c.Id == cardId);
 
-                    if (card == null)
-                    {
-                        return null;
-                    }
+    //                if (card == null)
+    //                {
+    //                    return null;
+    //                }
 
-                    return new SalesCardDiscountStrategy(card);
+    //                return new SalesCardDiscountStrategy(card);
 
-                case 2:
-                    if (!int.TryParse(Console.ReadLine(), out int amountId))
-                    {
-                        return null;
-                    }
+    //            case 2:
+    //                Console.RE
 
-                    AmountCoupon? amountCoupon = amountCoupons
-                        .FirstOrDefault(c => c.Id == amountId);
+    //                if (Console.ReadLine() == null)
+    //                {
+    //                    return null;
+    //                }
 
-                    if (amountCoupon == null)
-                    {
-                        return null;
-                    }
+    //                AmountCoupon? amountCoupon = amountCoupons
+    //                    .FirstOrDefault(c => c.Id == amountId);
 
-                    return new CouponAmountDiscountStrategy(amountCoupon);
+    //                if (amountCoupon == null)
+    //                {
+    //                    return null;
+    //                }
 
-                case 3:
-                    if (!int.TryParse(Console.ReadLine(), out int percentId))
-                    {
-                        return null;
-                    }
+    //                return new CouponAmountDiscountStrategy(amountCoupon);
 
-                    PercentCoupon? percentCoupon = percentCoupons
-                        .FirstOrDefault(c => c.Id == percentId);
+    //            case 3:
+    //                if (!int.TryParse(Console.ReadLine(), out int percentId))
+    //                {
+    //                    return null;
+    //                }
 
-                    if (percentCoupon == null)
-                    {
-                        return null;
-                    }
+    //                PercentCoupon? percentCoupon = percentCoupons
+    //                    .FirstOrDefault(c => c.Name == percentId);
 
-                    return new CouponPercentDiscountStrategy(percentCoupon);
+    //                if (percentCoupon == null)
+    //                {
+    //                    return null;
+    //                }
 
-                default:
-                    return null;
-            }
-        }
-    }
+    //                return new CouponPercentDiscountStrategy(percentCoupon);
+
+    //            default:
+    //                return null;
+    //        }
+    //    }
+    //}
 
     public interface IDiscountStrategy
     {
@@ -101,7 +103,7 @@ namespace bookStore.Entities
     {
         private readonly SalesCard SalesCard = salesCard;
 
-        public string Description => $"Скидочная карта #{SalesCard.Id} ({SalesCard.SalesAmount}%)";
+        public string Description => $"Скидочная карта #{SalesCard.Number} ({SalesCard.SalesAmount}%)";
 
         public decimal ApplyDiscount(decimal total)
         {
@@ -114,7 +116,7 @@ namespace bookStore.Entities
     {
         private readonly AmountCoupon Coupon = coupon;
 
-        public string Description => $"Купон #{Coupon.Id} (-{Coupon.DiscountAmount} руб.)";
+        public string Description => $"Купон #{Coupon.Name} (-{Coupon.DiscountAmount} руб.)";
 
         public decimal ApplyDiscount(decimal total)
         {
@@ -126,7 +128,7 @@ namespace bookStore.Entities
     {
         private readonly PercentCoupon Coupon = coupon;
 
-        public string Description => $"Купон #{Coupon.Id} (-{Coupon.DiscountPercent}%)";
+        public string Description => $"Купон #{Coupon.Name} (-{Coupon.DiscountPercent}%)";
 
         public decimal ApplyDiscount(decimal total)
         {

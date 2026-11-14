@@ -4,18 +4,18 @@ using System.Text;
 
 namespace bookStore.Entities
 {
-    public abstract class Coupon(int id)
+    public abstract class Coupon(string name)
     {
-        public int Id { get; set; } = id;
+        public string Name { get; set; } = name;
     }
 
     public class AmountCoupon : Coupon
     {
         public decimal DiscountAmount { get; set; }
 
-        public AmountCoupon(int id, decimal discountAmount) : base(id)
+        public AmountCoupon(string name, decimal discountAmount) : base(name)
         {
-            Id = id;
+            Name = name;
 
             if (discountAmount > 1000)
             {
@@ -24,15 +24,20 @@ namespace bookStore.Entities
 
             DiscountAmount = discountAmount <= 0 ? 1m : discountAmount;
         }
+
+        public override string ToString()
+        {
+            return $"{Name}: {DiscountAmount}";
+        }
     }
 
     public class PercentCoupon : Coupon
     {
         public int DiscountPercent { get; set; }
 
-        public PercentCoupon(int id, int discountPercent) : base(id)
+        public PercentCoupon(string name, int discountPercent) : base(name)
         {
-            Id = id;
+            Name = name;
 
             if (discountPercent > 100)
             {
@@ -40,6 +45,11 @@ namespace bookStore.Entities
             }
 
             DiscountPercent = discountPercent <= 0 ? 1 : discountPercent;
+        }
+
+        public override string ToString()
+        {
+            return $"{Name}: {DiscountPercent}%";
         }
     }
 }

@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace bookStore.Entities
 {
     public class SalesCard
     {
-        public int Id { get; set; }
+        public string Number { get; set; }
         public int SalesAmount { get; set; }
 
-        public SalesCard(int id, int salesAmount)
+        public SalesCard(string number, int salesAmount)
         {
-            Id = id;
+            Number = number;
 
             if(salesAmount > 100)
             {
@@ -19,6 +20,11 @@ namespace bookStore.Entities
             }
 
             SalesAmount = salesAmount <= 0 ? 1 : salesAmount;
+        }
+
+        public override string ToString()
+        {
+            return $"{Number}: {SalesAmount}%";
         }
     }
 }

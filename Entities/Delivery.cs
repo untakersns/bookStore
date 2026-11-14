@@ -33,24 +33,6 @@ namespace bookStore.Entities
                 return string.Empty;
             }
         }
-
-        public static Delivery AddDelivery()
-        {
-            Console.WriteLine("Введите адрес доставки: ", Console.ForegroundColor = ConsoleColor.Yellow);
-            Console.ResetColor();
-            string address = Console.ReadLine()!;
-
-            Console.WriteLine("Введите номер телефона: ", Console.ForegroundColor = ConsoleColor.Yellow);
-            Console.ResetColor();
-            string number = TryAddNumber(Console.ReadLine()!);
-
-            Console.WriteLine("Введите адрес электронной почты: ", Console.ForegroundColor = ConsoleColor.Yellow);
-            Console.ResetColor();
-            string email = TryAddEmail(Console.ReadLine()!);
-
-            return new(address, number, email);
-        }
-
         public override string ToString()
         {
             return $"Адрес: {Address}, Номер телефона: {PhoneNumber}, Email: {Email}, Стоимость доставки: {DeliveryCost}";

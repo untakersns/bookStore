@@ -50,36 +50,6 @@ namespace bookStore.Entities
 
             return currentOrder.Result();
         }
-
-        public static Order CreateOrder(WishList wishList, 
-            List<SalesCard> salesCards, 
-            List<AmountCoupon> amountCoupons, 
-            List<PercentCoupon> percentCoupons,
-            List<Order> orders,
-            Order currentOrder)
-        {
-            // выбор скидки
-            IDiscountStrategy? discountStrategy = DiscountSelector.SelectDiscountStrategy(salesCards, amountCoupons, percentCoupons);
-
-            if (discountStrategy == null)
-            {
-                return new Order(wishList, Delivery.AddDelivery(), new NoDiscountStrategy());
-            }
-
-            if (wishList.wishList.Count == 0)
-            {
-                wishList.wishList.Add(new Book(0, "", "", 0.0m));
-                return new Order(wishList, Delivery.AddDelivery(), discountStrategy);
-            }
-            // создание заказа вместе с доставкой
-            Order order = new(wishList, Delivery.AddDelivery(), discountStrategy);
-
-            orders.Add(order);
-            currentOrder = order;
-            wishList = new WishList();
-            return order;
-        }
-
         public override string ToString()
         {
             return $"{string.Join('\n', WishList.wishList)} \n{Delivery} \n{Result()} \n";
