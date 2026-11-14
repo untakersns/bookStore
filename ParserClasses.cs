@@ -30,7 +30,7 @@ namespace bookStore
 
                 if (fields.Length < 4) continue;
 
-                if (int.TryParse(fields[0].Trim(), out int id) && decimal.TryParse(fields[3], out decimal cost))
+                if (int.TryParse(fields[0].Trim(), out int id) && fields[1].Trim() != "" && fields[2].Trim() != "" && decimal.TryParse(fields[3], out decimal cost))
                 {
                     books.Add(new Book(
                         id,
