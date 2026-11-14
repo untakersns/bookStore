@@ -128,12 +128,12 @@ namespace bookStore
         {
             if (percentCoupons.Any(coupon => coupon.Name == name))
             {
-                discountStrategy = new CouponAmountDiscountStrategy(amountCoupons.FirstOrDefault(coupon => coupon.Name == name));
+                discountStrategy = new CouponPercentDiscountStrategy(percentCoupons.FirstOrDefault(coupon => coupon.Name == name));
                 return true;
             }
             if(amountCoupons.Any(coupon => coupon.Name == name))
             {
-                discountStrategy = new CouponPercentDiscountStrategy(percentCoupons.FirstOrDefault(coupon => coupon.Name == name));
+                discountStrategy = new CouponAmountDiscountStrategy(amountCoupons.FirstOrDefault(coupon => coupon.Name == name));
                 return true;
             }
             
@@ -143,13 +143,36 @@ namespace bookStore
 
         public void RemoveCoupon(string name)
         {
-            if (amountCoupons.Any(c => c.Name == name))
+            if (amountCoupons.Any(c => c.Name == name) || percentCoupons.Any(c => c.Name == name))
             {
-                amountCoupons.RemoveAll(c => c.Name == name);
-            }
-            else if (percentCoupons.Any(c => c.Name == name))
-            {
-                percentCoupons.RemoveAll(c => c.Name == name);
+                string couponToRemove = "";
+                if (amountCoupons.Any(c => c.Name == name))
+                {
+                    couponToRemove = amountCoupons.FirstOrDefault(c => c.Name == name).ToString();
+                    amountCoupons.RemoveAll(c => c.Name == name);
+                }
+                else if (percentCoupons.Any(c => c.Name == name))
+                {
+                    couponToRemove = percentCoupons.FirstOrDefault(c => c.Name == name).ToString();
+                    percentCoupons.RemoveAll(c => c.Name == name);
+                }
+
+                string tempPath = "couponsTemp.txt";
+
+                using (var reader = new StreamReader(FilePath))
+                using (var writer = new StreamWriter(tempPath))
+                {
+                    string line;
+                    while((line = reader.ReadLine()) != null)
+                    {
+                        if(line != couponToRemove)
+                        {
+                            writer.WriteLine(line);
+                        }
+                    }
+                }
+                File.Delete(FilePath);
+                File.Move(tempPath, FilePath);
             }
             else
             {

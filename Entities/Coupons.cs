@@ -27,7 +27,7 @@ namespace bookStore.Entities
 
         public override string ToString()
         {
-            return $"{Name}: {DiscountAmount}";
+            return $"{Name};{DiscountAmount}";
         }
     }
 
@@ -49,7 +49,7 @@ namespace bookStore.Entities
 
         public override string ToString()
         {
-            return $"{Name}: {DiscountPercent}%";
+            return $"{Name};{DiscountPercent}%";
         }
     }
 }
