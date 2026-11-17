@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace bookStore
+namespace bookStore.Logic
 {
     internal class FileLoadCatalog(string filePath)
     {
@@ -49,7 +49,7 @@ namespace bookStore
     internal class FileCardStore(string filePath)
     {
         private string FilePath { get; set; } = filePath;
-        private List<SalesCard> salesCards { get; set; } = [];
+        public List<SalesCard> salesCards { get; set; } = [];
 
         public void FillCards()
         {
