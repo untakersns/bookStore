@@ -32,7 +32,7 @@ namespace bookStore.Logic
                 $"Итого к оплате {Order.Result().ToString()}";
         }
 
-        public bool SchetFakturaLoadInFile(string path = "SchetFaktura.txt")
+        public bool SchetFakturaLoadInFile(string path = @"files\SchetFaktura.txt")
         {
             if (File.Exists(path))
             {

@@ -9,7 +9,7 @@ namespace bookStore.Entities
         public WishList WishList { get; } = wishList;
         public Delivery Delivery { get; } = delivery;
 
-        private readonly IDiscountStrategy DiscountStrategy = discountStrategy;
+        public readonly IDiscountStrategy DiscountStrategy = discountStrategy;
 
         //общая стоимость книг в корзине
         private static decimal CalculateCost(List<Book> wishList)

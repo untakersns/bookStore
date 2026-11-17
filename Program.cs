@@ -1,31 +1,25 @@
 ﻿using bookStore.Entities;
 using bookStore.Logic;
+using bookStore.UI;
 
 internal class Program
 {
+    const string booksPath = @"files\books.txt";
+    const string salesCardsPath = @"files\salesCards.txt";
+    const string couponPath = @"files\coupons.txt";
+
     private static void Main(string[] args)
     {
-        WishList wishList = new();
-        FileLoadCatalog fileLoadCatalog = new("books.txt");
-        FileCardStore fileCardCatalog = new("salesCards.txt");
-        FileCouponStore fileCouponStore = new("coupons.txt");
-
-        fileCardCatalog.FillCards();
-        fileCouponStore.FillCoupons();
+        FileLoadCatalog fileLoadCatalog = new(booksPath);
+        FileCardStore fileCardStore = new(salesCardsPath);
+        FileCouponStore fileCouponStore = new(couponPath);
 
         List<Book> books = fileLoadCatalog.LoadAll();
-        wishList.wishList = [
-                books[0],
-                books[1],
-                books[2],
-                books[3]
-            ];
-        Delivery delivery = new("ул. Пушкина", "8-(029)-124-21-64", "kkk@gmail.com");
+        fileCardStore.FillCards();
+        fileCouponStore.FillCoupons();
+        WishList wishList = new();
 
-        fileCardCatalog.TryGetCards("8-(029)-124-21-64", out IDiscountStrategy discountStrategy);
-        Order order = new(wishList, delivery, discountStrategy);
-        Order_Formatting order_Formatting = new(order);
-        Console.WriteLine(order_Formatting.SchetFaktura()!);
-        order_Formatting.SchetFakturaLoadInFile();
+        ConsoleUI consoleUI = new(fileCouponStore, books, fileCardStore.salesCards, wishList);
+        consoleUI.Run();
     }
 }

@@ -51,5 +51,10 @@ namespace bookStore.Entities
 
             return fullPrice;
         }
+
+        public List<Book> Clear()
+        {
+            return [];
+        }
     }
 }
