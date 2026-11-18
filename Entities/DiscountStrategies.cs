@@ -167,7 +167,7 @@ namespace bookStore.Entities
     {
         private readonly SalesCard SalesCard = salesCard;
 
-        public string Description => $"Скидочная карта #{SalesCard.Number} ({SalesCard.SalesAmount}%)";
+        public string Description => $"Скидочная карта #{SalesCard.Number} (-{SalesCard.SalesAmount}%)";
 
         public decimal ApplyDiscount(decimal total)
         {

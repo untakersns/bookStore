@@ -201,7 +201,7 @@ namespace bookStore.UI
 
                 if (!int.TryParse(Console.ReadLine(), out int choice))
                 {
-                    Console.WriteLine("Непрвильный ввод.");
+                    Console.WriteLine("Неправильный ввод.");
                     continue;
                 }
 
