@@ -172,7 +172,7 @@ namespace bookStore.Entities
         public decimal ApplyDiscount(decimal total)
         {
             decimal discount = total * SalesCard.SalesAmount / 100m;
-            return total - discount;
+            return Math.Max(0m, total - discount);
         }
     }
 
@@ -197,7 +197,7 @@ namespace bookStore.Entities
         public decimal ApplyDiscount(decimal total)
         {
             decimal discount = total * Coupon.DiscountPercent / 100m;
-            return total - discount;
+            return Math.Max(0m, total - discount);
         }
     }
 }
