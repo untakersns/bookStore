@@ -15,6 +15,7 @@ namespace bookStore.UI
         private Delivery delivery = new(string.Empty, string.Empty, string.Empty);
         private Order order = new(new WishList(), new Delivery(string.Empty, string.Empty, string.Empty), new NoDiscountStrategy());
         private Order_Formatting order_Formatting = new(new Order(new WishList(), new Delivery(string.Empty, string.Empty, string.Empty), new NoDiscountStrategy()));
+        private string? SelectedCouponName;
 
         public void Run()
         {
@@ -61,10 +62,20 @@ namespace bookStore.UI
                     case 5:
                         Order orderInput = CreateOrder();
                         Console.WriteLine("Вы уверены что хотите создать заказ? (Да/Нет)");
-                        if(Console.ReadLine() == "Да")
+                        if(string.Equals(Console.ReadLine()?.Trim(), "Да", StringComparison.OrdinalIgnoreCase))
                         {
                             order = orderInput;
                             Console.WriteLine("Заказ успешно создан!\n" + order);
+
+                            if (SelectedCouponName is not null)
+                            {
+                                FileCouponStore.RemoveCoupon(SelectedCouponName);
+
+                                Console.WriteLine(
+                                    $"Купон \"{SelectedCouponName}\" использован и удалён.\n");
+
+                                SelectedCouponName = null;
+                            }
                         }
                         else
                         {
@@ -159,6 +170,8 @@ namespace bookStore.UI
 
         private IDiscountStrategy? SelectDiscountStrategy(List<SalesCard> salesCards, List<AmountCoupon> amountCoupons, List<PercentCoupon> percentCoupons)
         {
+            SelectedCouponName = null;
+
             Console.WriteLine("\nВыберите тип скидки: ");
             Console.WriteLine("0. Без скидки");
             Console.WriteLine("1. Скидочная карта");
@@ -167,7 +180,7 @@ namespace bookStore.UI
 
             if (!int.TryParse(Console.ReadLine(), out int choice))
             {
-                return null;
+                return new NoDiscountStrategy();
             }
 
             switch (choice)
@@ -228,6 +241,9 @@ namespace bookStore.UI
                         return new NoDiscountStrategy();
                     }
 
+                    SelectedCouponName = percentCoupon.Name;
+
+                    Console.WriteLine("Купон применен.");
                     return new CouponPercentDiscountStrategy(percentCoupon);
 
                 default:
@@ -238,7 +254,7 @@ namespace bookStore.UI
         private Order CreateOrder()
         {
             delivery = CreateDelivery();
-            return new(wishList, delivery, SelectDiscountStrategy(salesCards, FileCouponStore.amountCoupons, FileCouponStore.percentCoupons)!);
+            return new(WWishList, delivery, SelectDiscountStrategy(salesCards, FileCouponStore.amountCoupons, FileCouponStore.percentCoupons));
         }
     }
 }
