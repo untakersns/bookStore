@@ -76,15 +76,15 @@ namespace bookStore.Logic
             }
         }
 
-        public bool TryGetCards(string cardNum, out IDiscountStrategy discountStrategy)
+        public bool TryGetCards(string cardNum, out IDiscount discountStrategy)
         {
             if (salesCards.Count < 1 || !salesCards.Any(card => card.Number == cardNum))
             {
-                discountStrategy = new NoDiscountStrategy();
+                discountStrategy = new NoDiscount();
                 return false;
             }
 
-            discountStrategy = new SalesCardDiscountStrategy(salesCards.FirstOrDefault(card => card.Number == cardNum));
+            discountStrategy = new SalesCardDiscount(salesCards.FirstOrDefault(card => card.Number == cardNum));
             return true;
         }
     }
@@ -124,60 +124,81 @@ namespace bookStore.Logic
             }
         }
 
-        public bool TryFindCoupons(string name, out IDiscountStrategy discountStrategy)
+        public bool TryFindCoupons(string name, out IDiscount discountStrategy)
         {
             if (percentCoupons.Any(coupon => coupon.Name == name))
             {
-                discountStrategy = new CouponPercentDiscountStrategy(percentCoupons.FirstOrDefault(coupon => coupon.Name == name));
+                discountStrategy = new CouponPercentDiscount(percentCoupons.FirstOrDefault(coupon => coupon.Name == name));
                 return true;
             }
             if(amountCoupons.Any(coupon => coupon.Name == name))
             {
-                discountStrategy = new CouponAmountDiscountStrategy(amountCoupons.FirstOrDefault(coupon => coupon.Name == name));
+                discountStrategy = new CouponAmountDiscount(amountCoupons.FirstOrDefault(coupon => coupon.Name == name));
                 return true;
             }
             
-            discountStrategy = new NoDiscountStrategy();
+            discountStrategy = new NoDiscount();
             return false;
         }
 
-        public void RemoveCoupon(string name)
+        public int RemoveCoupon(IEnumerable<string> names)
         {
-            if (amountCoupons.Any(c => c.Name == name) || percentCoupons.Any(c => c.Name == name))
-            {
-                string couponToRemove = "";
-                if (amountCoupons.Any(c => c.Name == name))
-                {
-                    couponToRemove = amountCoupons.FirstOrDefault(c => c.Name == name).ToString();
-                    amountCoupons.RemoveAll(c => c.Name == name);
-                }
-                else if (percentCoupons.Any(c => c.Name == name))
-                {
-                    couponToRemove = percentCoupons.FirstOrDefault(c => c.Name == name).ToString();
-                    percentCoupons.RemoveAll(c => c.Name == name);
-                }
+            HashSet<string> namesToRemove = new(
+                names.Where(name => !string.IsNullOrWhiteSpace(name)),
+                StringComparer.OrdinalIgnoreCase
+                );
 
-                string tempPath = "couponsTemp.txt";
-
-                using (var reader = new StreamReader(FilePath))
-                using (var writer = new StreamWriter(tempPath))
-                {
-                    string line;
-                    while((line = reader.ReadLine()) != null)
-                    {
-                        if(line != couponToRemove)
-                        {
-                            writer.WriteLine(line);
-                        }
-                    }
-                }
-                File.Delete(FilePath);
-                File.Move(tempPath, FilePath);
-            }
-            else
+            if(namesToRemove.Count == 0)
             {
-                return;
+                return 0;
             }
+
+            if (!File.Exists(FilePath))
+            {
+                return 0;
+            }
+
+            string[] lines = File.ReadAllLines(FilePath);
+
+            //Оставляет все строки кроме использованных купонов
+            string[] remainingLines = lines
+                .Where(line =>
+                {
+                    int separatorIndex = line.IndexOf(';');
+
+                    string couponName = (
+                        separatorIndex >= 0 ? line[..separatorIndex] : line
+                    ).Trim();
+
+                    return !namesToRemove.Contains(couponName);
+                }).ToArray();
+
+            int removedCount = lines.Length - remainingLines.Length;
+
+            if (removedCount == 0) return 0;
+
+            //создание временного файла
+            string tempPath = FilePath + ".tmp";
+
+            try
+            {
+                File.WriteAllLines(tempPath, remainingLines);
+
+                File.Move(tempPath, FilePath, overwrite: true);
+            }
+            catch
+            {
+                if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                }
+                return 0;
+            }
+
+            amountCoupons.RemoveAll(c => namesToRemove.Contains(c.Name));
+            percentCoupons.RemoveAll(c => namesToRemove.Contains(c.Name));
+
+            return removedCount;
         }
     }
 }

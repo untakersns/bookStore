@@ -4,12 +4,12 @@ using System.Text;
 
 namespace bookStore.Entities
 {
-    public class Order(WishList wishList, Delivery delivery, IDiscountStrategy discountStrategy)
+    public class Order(WishList wishList, Delivery delivery, IDiscount discountStrategy)
     {
         public WishList WishList { get; } = wishList;
         public Delivery Delivery { get; } = delivery;
 
-        public readonly IDiscountStrategy DiscountStrategy = discountStrategy;
+        public readonly IDiscount DiscountStrategy = discountStrategy;
 
         //общая стоимость книг в корзине
         private static decimal CalculateCost(List<Book> wishList)
