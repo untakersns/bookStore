@@ -1,0 +1,40 @@
+﻿using bookStore.Entities;
+using System.Collections.Generic;
+
+namespace bookStore.Logic
+{
+    internal class DiscountFabric(DiscountBuilder discountBuilder, FileCouponStore couponStore)
+    {
+        private readonly DiscountBuilder DiscountBuilder = discountBuilder;
+        private readonly FileCouponStore CouponStore = couponStore;
+
+        public bool TryAddCoupon(string name)
+        {
+            return TryAddCoupon(name, out _);
+        }
+
+        public bool TryAddCoupon(
+            string name,
+            out Coupon? replacedCoupon)
+        {
+            replacedCoupon = null;
+
+            if (string.IsNullOrWhiteSpace(name))
+                return false;
+
+            Coupon? coupon = CouponStore.FindCoupon(name.Trim());
+
+            if (coupon == null)
+                return false;
+
+            return DiscountBuilder.AddCoupon(
+                coupon,
+                out replacedCoupon);
+        }
+
+        public List<string> GetCouponNames()
+        {
+            return DiscountBuilder.GetUsedCouponNames();
+        }
+    }
+}

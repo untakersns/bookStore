@@ -201,7 +201,7 @@ namespace bookStore.UI
             return new Delivery(address, phoneNumber, email);
         }
 
-        private void SelectDiscount(DiscountBuilder builder)
+        private void SelectDiscount(DiscountBuilder builder, DiscountFabric discountFabric)
         {
             while (true)
             {
@@ -223,77 +223,65 @@ namespace bookStore.UI
                         return;
 
                     case 1:
+                        // Номер телефона уже получен при создании доставки.
+                        SalesCard? card =
+                            FileCardStore.FindCard(delivery.PhoneNumber);
+                        
+                        if (card == null)
                         {
-                            // Номер телефона уже получен при создании доставки.
-                            SalesCard? card =
-                                FileCardStore.FindCard(delivery.PhoneNumber);
-
-                            if (card == null)
-                            {
-                                Console.WriteLine(
-                                    "Скидочная карта для указанного номера телефона не найдена.");
-                                break;
-                            }
-
-                            SalesCard? previousCard = builder.SetSalesCard(card);
-
-                            if (previousCard == null)
-                            {
-                                Console.WriteLine(
-                                    "Скидка по карте успешно добавлена.");
-                            }
-                            else if (previousCard.Number == card.Number)
-                            {
-                                Console.WriteLine("Эта карта уже выбрана!");
-                            }
-                            else
-                            {
-                                Console.WriteLine(
-                                    $"Карта {previousCard.Number} заменена картой {card.Number}.");
-                            }
-
+                            Console.WriteLine(
+                                "Скидочная карта для указанного номера телефона не найдена.");
                             break;
                         }
+                        
+                        SalesCard? previousCard = builder.SetSalesCard(card);
+                        
+                        if (previousCard == null)
+                        {
+                            Console.WriteLine(
+                                "Скидка по карте успешно добавлена.");
+                        }
+                        else if (previousCard.Number == card.Number)
+                        {
+                            Console.WriteLine("Эта карта уже выбрана!");
+                        }
+                        else
+                        {
+                            Console.WriteLine(
+                                $"Карта {previousCard.Number} заменена картой {card.Number}.");
+                        }
+                        
+                        break;
+                        
 
                     case 2:
+                        Console.WriteLine("Введите название купона:");
+
+                        string couponName =
+                            Console.ReadLine()?.Trim() ?? string.Empty;
+
+                        bool wasAdded = discountFabric.TryAddCoupon(
+                            couponName,
+                            out Coupon? replacedCoupon);
+
+                        if (!wasAdded)
                         {
-                            Console.WriteLine("Введите название купона:");
-
-                            string couponName =
-                                Console.ReadLine()?.Trim() ?? string.Empty;
-
-                            Coupon? coupon =
-                                FileCouponStore.FindCoupon(couponName);
-
-                            if (coupon == null)
-                            {
-                                Console.WriteLine("Купон не найден.");
-                                break;
-                            }
-
-                            bool wasAdded = builder.AddCoupon(
-                                coupon,
-                                out Coupon? replacedCoupon);
-
-                            if (!wasAdded)
-                            {
-                                Console.WriteLine(
-                                    "Этот купон уже добавлен или выбран.");
-                            }
-                            else if (replacedCoupon != null)
-                            {
-                                Console.WriteLine(
-                                    $"Процентный купон {replacedCoupon.Name} " +
-                                    $"заменён купоном {coupon.Name}.");
-                            }
-                            else
-                            {
-                                Console.WriteLine(
-                                    $"Купон {coupon.Name} успешно добавлен.");
-                            }
-
-                            break;
+                            Console.WriteLine(
+                                "Купон не найден или уже добавлен.");
                         }
+                        else if (replacedCoupon != null)
+                        {
+                            Console.WriteLine(
+                                $"Процентный купон {replacedCoupon.Name} " +
+                                $"заменён новым купоном {couponName}.");
+                        }
+                        else
+                        {
+                            Console.WriteLine(
+                                $"Купон {couponName} успешно добавлен.");
+                        }
+
+                        break;
 
                     case 3:
                         builder.Clear();
@@ -313,11 +301,15 @@ namespace bookStore.UI
 
             DiscountBuilder builder = new();
 
-            SelectDiscount(builder);
+            DiscountFabric discountFabric = new(
+                builder,
+                FileCouponStore);
+
+            SelectDiscount(builder, discountFabric);
 
             var discountValues = builder.GetDiscountValues();
 
-            SelectedCouponNames = builder.GetUsedCouponNames();
+            SelectedCouponNames = discountFabric.GetCouponNames();
 
             string discountDescription =
                 builder.GetDiscountDescription();
