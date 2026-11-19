@@ -1,139 +1,141 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace bookStore.Entities
 {
     public class CompositeDiscount : IDiscount
     {
-        private readonly List<IDiscount> strategies = [];
+        private readonly List<IDiscount> strategies;
 
-        public string Description =>
-            strategies.Count == 0
-                ? "Без скидки"
-                : string.Join(" + ", strategies.Select(s => s.Description));
+        public string Description => strategies.Count == 0
+            ? "Без скидки"
+            : string.Join(" + ", strategies.Select(s => s.Description));
 
-        public void Add(IDiscount strategy)
+        public CompositeDiscount(IEnumerable<IDiscount> strategies)
         {
-            if(strategy == null)
-            {
-                return;
-            }
-
-            strategies.Add(strategy);
+            this.strategies = strategies?.ToList() ?? [];
         }
 
-        public void Clear()
+        public decimal ApplyDiscount(
+            decimal total,
+            decimal? salesCardPercent,
+            decimal? couponPercent,
+            List<decimal> amountDiscounts)
         {
-            strategies.Clear();
-        }
-
-        public decimal ApplyDiscount(decimal total)
-        {
-            foreach (var strategy in strategies)
+            foreach (IDiscount strategy in strategies)
             {
-                total = strategy.ApplyDiscount(total);
+                total = strategy.ApplyDiscount(
+                    total, salesCardPercent, couponPercent, amountDiscounts);
             }
+
             return total;
         }
     }
 
-    internal class DiscountBuilder(CompositeDiscount composite)
+    internal class DiscountBuilder
     {
-        private readonly CompositeDiscount Composite = composite ?? new CompositeDiscount();
         private SalesCard? salesCard;
         private PercentCoupon? percentCoupon;
         private readonly List<AmountCoupon> amountCoupons = [];
 
         public SalesCard? SetSalesCard(SalesCard card)
         {
-            if(card == null)
-            {
-                return new(string.Empty, 0);
-            }
+            if (card == null)
+                return null;
 
             SalesCard? previous = salesCard;
             salesCard = card;
-
             return previous;
         }
 
-        public bool SetPercentCoupon(PercentCoupon coupon, out PercentCoupon? replacedCoupon)
+        public bool AddCoupon(Coupon coupon, out Coupon? replacedCoupon)
         {
-            if (coupon == null)
+            replacedCoupon = null;
+
+            switch (coupon)
             {
-                replacedCoupon = new(string.Empty, 0);
-                return false;
+                case PercentCoupon percent:
+                    if (percentCoupon != null &&
+                        string.Equals(percentCoupon.Name, percent.Name,
+                            StringComparison.OrdinalIgnoreCase))
+                        return false;
+
+                    replacedCoupon = percentCoupon;
+                    percentCoupon = percent;
+                    return true;
+
+                case AmountCoupon amount:
+                    if (amountCoupons.Any(existing =>
+                        string.Equals(existing.Name, amount.Name,
+                            StringComparison.OrdinalIgnoreCase)))
+                        return false;
+
+                    amountCoupons.Add(amount);
+                    return true;
+
+                default:
+                    return false;
             }
-
-            if (percentCoupon != null && 
-                string.Equals(
-                    percentCoupon.Name,
-                    coupon.Name, 
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                replacedCoupon = null;
-                return false;
-            }
-
-            replacedCoupon = percentCoupon;
-            percentCoupon = coupon;
-
-            return true;
         }
 
-        public bool AddAmountCoupon(AmountCoupon coupon)
+        public IDiscount Build()
         {
-            if (coupon == null)
-            {
-                return false;
-            }
+            List<IDiscount> strategies = [];
 
-            if (amountCoupons.Any(c => 
-                string.Equals(
-                    c.Name,
-                    coupon.Name,
-                    StringComparison.OrdinalIgnoreCase)))
-            {
-                return false;
-            }
-
-            amountCoupons.Add(coupon);
-            return true;
-        }
-
-        //формирование скидки
-        public CompositeDiscount Build()
-        {
-            CompositeDiscount composite = new();
             if (salesCard != null)
-            {
-                composite.Add(new SalesCardDiscount(salesCard));
-            }
+                strategies.Add(new SalesCardDiscount());
+
             if (percentCoupon != null)
-            {
-                composite.Add(new CouponPercentDiscount(percentCoupon));
-            }
-            foreach (var amountCoupon in amountCoupons)
-            {
-                composite.Add(new CouponAmountDiscount(amountCoupon));
-            }
-            return composite;
+                strategies.Add(new CouponPercentDiscount());
+
+            if (amountCoupons.Count > 0)
+                strategies.Add(new CouponAmountDiscount());
+
+            return new CompositeDiscount(strategies);
         }
 
-        //возвращает купоны которые были использованы в текущей сборке скидок
+        public (decimal? SalesCardPercent, decimal? CouponPercent,
+            List<decimal> AmountDiscounts) GetDiscountValues()
+        {
+            return (
+                salesCard?.SalesAmount,
+                percentCoupon?.DiscountPercent,
+                amountCoupons.Select(c => c.DiscountAmount).ToList()
+            );
+        }
+
         public List<string> GetUsedCouponNames()
         {
             List<string> names = [];
 
-            if(percentCoupon != null)
-            {
+            if (percentCoupon != null)
                 names.Add(percentCoupon.Name);
-            }
 
             names.AddRange(amountCoupons.Select(c => c.Name));
 
             return names;
+        }
+
+        public string GetDiscountDescription()
+        {
+            List<string> descriptions = [];
+
+            if (salesCard != null)
+                descriptions.Add(
+                    $"Скидочная карта #{salesCard.Number} (-{salesCard.SalesAmount}%)");
+
+            if (percentCoupon != null)
+                descriptions.Add(
+                    $"Купон #{percentCoupon.Name} (-{percentCoupon.DiscountPercent}%)");
+
+            descriptions.AddRange(amountCoupons.Select(c =>
+                $"Купон #{c.Name} (-{c.DiscountAmount} руб.)"));
+
+            return descriptions.Count == 0
+                ? "Без скидки"
+                : string.Join(" + ", descriptions);
         }
 
         public void Clear()
@@ -141,63 +143,64 @@ namespace bookStore.Entities
             salesCard = null;
             percentCoupon = null;
             amountCoupons.Clear();
-
-            Composite.Clear();
         }
     }
 
     public interface IDiscount
     {
-        decimal ApplyDiscount(decimal total);
+        decimal ApplyDiscount(
+            decimal total,
+            decimal? salesCardPercent,
+            decimal? couponPercent,
+            List<decimal> amountDiscounts);
 
         string Description { get; }
     }
 
-    public class NoDiscount : IDiscount
+    public class SalesCardDiscount : IDiscount
     {
-        public string Description => "Без скидки";
+        public string Description => "Скидка по карте";
 
-        public decimal ApplyDiscount(decimal total)
+        public decimal ApplyDiscount(
+            decimal total, decimal? salesCardPercent,
+            decimal? couponPercent, List<decimal> amountDiscounts)
         {
+            if (salesCardPercent == null)
+                return total;
+
+            decimal discount = total * salesCardPercent.Value / 100m;
+            return Math.Max(0m, total - discount);
+        }
+    }
+
+    public class CouponPercentDiscount : IDiscount
+    {
+        public string Description => "Процентный купон";
+
+        public decimal ApplyDiscount(
+            decimal total, decimal? salesCardPercent,
+            decimal? couponPercent, List<decimal> amountDiscounts)
+        {
+            if (couponPercent is null)
+                return total;
+
+            decimal discount = total * couponPercent.Value / 100m;
+            return Math.Max(0m, total - discount);
+        }
+    }
+
+    public class CouponAmountDiscount : IDiscount
+    {
+        public string Description => "Купоны на фиксированную сумму";
+
+        public decimal ApplyDiscount(
+            decimal total, decimal? salesCardPercent,
+            decimal? couponPercent, List<decimal> amountDiscounts)
+        {
+            foreach (decimal amount in amountDiscounts)
+                total = Math.Max(0m, total - amount);
+
             return total;
-        }
-    }
-
-    public class SalesCardDiscount(SalesCard salesCard) : IDiscount
-    {
-        private readonly SalesCard SalesCard = salesCard;
-
-        public string Description => $"Скидочная карта #{SalesCard.Number} (-{SalesCard.SalesAmount}%)";
-
-        public decimal ApplyDiscount(decimal total)
-        {
-            decimal discount = total * SalesCard.SalesAmount / 100m;
-            return Math.Max(0m, total - discount);
-        }
-    }
-
-    public class CouponAmountDiscount(AmountCoupon coupon) : IDiscount
-    {
-        private readonly AmountCoupon Coupon = coupon;
-
-        public string Description => $"Купон #{Coupon.Name} (-{Coupon.DiscountAmount} руб.)";
-
-        public decimal ApplyDiscount(decimal total)
-        {
-            return Math.Max(0m, total - Coupon.DiscountAmount);
-        }
-    }
-
-    public class CouponPercentDiscount(PercentCoupon coupon) : IDiscount
-    {
-        private readonly PercentCoupon Coupon = coupon;
-
-        public string Description => $"Купон #{Coupon.Name} (-{Coupon.DiscountPercent}%)";
-
-        public decimal ApplyDiscount(decimal total)
-        {
-            decimal discount = total * Coupon.DiscountPercent / 100m;
-            return Math.Max(0m, total - discount);
         }
     }
 }

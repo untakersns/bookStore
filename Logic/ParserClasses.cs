@@ -76,17 +76,16 @@ namespace bookStore.Logic
             }
         }
 
-        public bool TryGetCards(string cardNum, out IDiscount discountStrategy)
-        {
-            if (salesCards.Count < 1 || !salesCards.Any(card => card.Number == cardNum))
-            {
-                discountStrategy = new NoDiscount();
-                return false;
-            }
 
-            discountStrategy = new SalesCardDiscount(salesCards.FirstOrDefault(card => card.Number == cardNum));
-            return true;
+        public SalesCard? FindCard(string phoneNumber)
+        {
+            return salesCards.FirstOrDefault(card =>
+                string.Equals(
+                    card.Number,
+                    phoneNumber,
+                    StringComparison.OrdinalIgnoreCase));
         }
+
     }
 
     internal class FileCouponStore(string filePath)
@@ -124,21 +123,22 @@ namespace bookStore.Logic
             }
         }
 
-        public bool TryFindCoupons(string name, out IDiscount discountStrategy)
+        public Coupon? FindCoupon(string name)
         {
-            if (percentCoupons.Any(coupon => coupon.Name == name))
-            {
-                discountStrategy = new CouponPercentDiscount(percentCoupons.FirstOrDefault(coupon => coupon.Name == name));
-                return true;
-            }
-            if(amountCoupons.Any(coupon => coupon.Name == name))
-            {
-                discountStrategy = new CouponAmountDiscount(amountCoupons.FirstOrDefault(coupon => coupon.Name == name));
-                return true;
-            }
-            
-            discountStrategy = new NoDiscount();
-            return false;
+            Coupon? percentCoupon = percentCoupons.FirstOrDefault(coupon =>
+                string.Equals(
+                    coupon.Name,
+                    name,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (percentCoupon != null)
+                return percentCoupon;
+
+            return amountCoupons.FirstOrDefault(coupon =>
+                string.Equals(
+                    coupon.Name,
+                    name,
+                    StringComparison.OrdinalIgnoreCase));
         }
 
         public int RemoveCoupon(IEnumerable<string> names)

@@ -1,58 +1,90 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace bookStore.Entities
 {
-    public class Order(WishList wishList, Delivery delivery, IDiscount discountStrategy)
+    public class Order
     {
-        public WishList WishList { get; } = wishList;
-        public Delivery Delivery { get; } = delivery;
+        public WishList WishList { get; }
+        public Delivery Delivery { get; }
 
-        public readonly IDiscount DiscountStrategy = discountStrategy;
+        public IDiscount DiscountStrategy { get; }
 
-        //общая стоимость книг в корзине
+        private readonly decimal? salesCardPercent;
+        private readonly decimal? couponPercent;
+        private readonly List<decimal> amountDiscounts;
+        private readonly string discountDescription;
+
+        public Order(
+            WishList wishList,
+            Delivery delivery,
+            IDiscount discountStrategy,
+            decimal? salesCardPercent,
+            decimal? couponPercent,
+            IEnumerable<decimal> amountDiscounts,
+            string discountDescription)
+        {
+            WishList = wishList;
+            Delivery = delivery;
+            DiscountStrategy = discountStrategy;
+
+            this.salesCardPercent = salesCardPercent;
+            this.couponPercent = couponPercent;
+            this.amountDiscounts = amountDiscounts?.ToList() ?? [];
+
+            this.discountDescription =
+                string.IsNullOrWhiteSpace(discountDescription)
+                    ? "Без скидки"
+                    : discountDescription;
+        }
+
         private static decimal CalculateCost(List<Book> wishList)
         {
-            decimal fullPrice = 0.0m;
+            decimal fullPrice = 0m;
 
-            foreach (var book in wishList)
-            {
+            foreach (Book book in wishList)
                 fullPrice += book.Price;
-            }
 
             return fullPrice;
         }
 
-        //запись результата в отдельную переменную
-        public decimal BooksCost => CalculateCost(WishList.wishList!);
+        public decimal BooksCost =>
+            CalculateCost(WishList.wishList!);
 
-        //размер скидки для отображения в счет-фактуре для данного заказа
-        public decimal DiscountAmount => BooksCost - DiscountStrategy.ApplyDiscount(BooksCost);
+        // Применение всех выбранных скидок.
+        private decimal CalculateDiscountedPrice()
+        {
+            return DiscountStrategy.ApplyDiscount(
+                BooksCost,
+                salesCardPercent,
+                couponPercent,
+                amountDiscounts);
+        }
 
-        //тип примененной скидки в счет-фактуре
-        public string DiscountDescription => DiscountStrategy.Description;
+        public decimal DiscountAmount =>
+            BooksCost - CalculateDiscountedPrice();
 
-        //расчет итоговой цены после применения скидки с учетом стоимости доставки
+        public string DiscountDescription =>
+            discountDescription;
+
         public decimal Result()
         {
-            decimal discountedPrice = DiscountStrategy.ApplyDiscount(BooksCost);
-
-            return discountedPrice + Delivery.DeliveryCost;
+            return CalculateDiscountedPrice() + Delivery.DeliveryCost;
         }
 
         public static decimal CalculateOrder(Order currentOrder)
         {
             if (currentOrder == null)
-            {
-                return 0.0m;
-            }
+                return 0m;
 
             return currentOrder.Result();
         }
+
         public override string ToString()
         {
-            return $"{string.Join('\n', WishList.wishList)} \n{Delivery} \n{Result()} \n";
+            return $"{string.Join('\n', WishList.wishList)} \n" +
+                   $"{Delivery} \n{Result()} \n";
         }
     }
 }

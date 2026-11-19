@@ -1,27 +1,33 @@
-﻿using bookStore.Entities;
+﻿
+using bookStore.Entities;
 using bookStore.Logic;
 using System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Text;
+using System.Linq;
 
 namespace bookStore.UI
 {
-    internal class ConsoleUI(FileCouponStore fileCouponStore, List<Book> books, List<SalesCard> salesCards, WishList wishList)
+    internal class ConsoleUI(
+        FileCouponStore fileCouponStore,
+        FileCardStore fileCardStore,
+        List<Book> books,
+        WishList wishList)
     {
         private readonly FileCouponStore FileCouponStore = fileCouponStore;
+        private readonly FileCardStore FileCardStore = fileCardStore;
         private readonly List<Book> Books = books;
+
         private WishList WWishList = wishList;
         private Delivery delivery = new(string.Empty, string.Empty, string.Empty);
-        private Order order = new(new WishList(), new Delivery(string.Empty, string.Empty, string.Empty), new NoDiscount());
-        private Order_Formatting order_Formatting = new(new Order(new WishList(), new Delivery(string.Empty, string.Empty, string.Empty), new NoDiscount()));
+
         private List<string> SelectedCouponNames = [];
 
         public void Run()
         {
             while (true)
             {
-                Console.WriteLine("Введите желаемую функцию:\n" +
+                Console.WriteLine(
+                    "Введите желаемую функцию:\n" +
                     "1. Добавить книгу в корзину.\n" +
                     "2. Удалить книгу из корзины.\n" +
                     "3. Вывести корзину\n" +
@@ -29,7 +35,13 @@ namespace bookStore.UI
                     "5. Создать заказ.\n" +
                     "0. Выйти из цикла.\n");
 
-                switch (int.Parse(Console.ReadLine()!))
+                if (!int.TryParse(Console.ReadLine(), out int choice))
+                {
+                    Console.WriteLine("Неправильный ввод.\n");
+                    continue;
+                }
+
+                switch (choice)
                 {
                     case 0:
                         Environment.Exit(0);
@@ -62,49 +74,56 @@ namespace bookStore.UI
                     case 5:
                         Order orderInput = CreateOrder();
 
-                        Console.WriteLine("Вы уверены что хотите создать заказ? (Да/Нет)");
+                        Console.WriteLine(
+                            "Вы уверены, что хотите создать заказ? (Да/Нет)");
 
-                        if(string.Equals(
+                        if (string.Equals(
                             Console.ReadLine()?.Trim(),
                             "Да",
                             StringComparison.OrdinalIgnoreCase))
                         {
-                            order = orderInput;
+                            Console.WriteLine(
+                                "Заказ успешно создан!\n" + orderInput);
 
-                            Console.WriteLine("Заказ успешно создан!\n" + order);
-
+                            // Удаляем купоны только после подтверждения заказа.
                             if (SelectedCouponNames.Count > 0)
                             {
                                 try
                                 {
-                                    int removedCount = FileCouponStore.RemoveCoupon(SelectedCouponNames);
-                                    Console.WriteLine($"Удалено {removedCount} использованных купонов.");
+                                    int removedCount =
+                                        FileCouponStore.RemoveCoupon(SelectedCouponNames);
+
+                                    Console.WriteLine(
+                                        $"Удалено {removedCount} использованных купонов.");
                                 }
                                 catch
                                 {
-                                    return;
+                                    Console.WriteLine(
+                                        "Не удалось удалить использованные купоны.");
+                                    break;
                                 }
 
                                 SelectedCouponNames.Clear();
                             }
+
+                            Order_Formatting orderFormatting = new(orderInput);
+
+                            Console.WriteLine(orderFormatting.SchetFaktura());
+                            orderFormatting.SchetFakturaLoadInFile();
                         }
                         else
                         {
                             Console.WriteLine("Создание заказа отменено.");
 
+                            // При отмене купоны остаются в файле.
                             SelectedCouponNames.Clear();
-                            break;
                         }
 
-                        order_Formatting = new(order);
-
-                        Console.WriteLine(order_Formatting.SchetFaktura());
-
-                        order_Formatting.SchetFakturaLoadInFile();
                         break;
 
                     default:
-                        continue;
+                        Console.WriteLine("Такого пункта меню нет.\n");
+                        break;
                 }
             }
         }
@@ -113,28 +132,34 @@ namespace bookStore.UI
         {
             while (true)
             {
-                Console.WriteLine("Введите Id желаемой книги: (введите Exit чтобы выйти из цикла)");
-                string num = Console.ReadLine()!;
+                Console.WriteLine(
+                    "Введите Id желаемой книги: (введите Exit чтобы выйти из цикла)");
+
+                string num = Console.ReadLine() ?? string.Empty;
+
                 if (int.TryParse(num, out int n))
                 {
-                    if(Books.Contains(Books.FirstOrDefault(b => b.Id == n)))
+                    if (Books.Any(b => b.Id == n))
                     {
                         WWishList.AddBook(Books, n);
                         Console.WriteLine("Книга успешно добавлена!\n");
                     }
                     else
                     {
-                        Console.WriteLine("Книга не добавлена! Возможно ее не существует.\n");
+                        Console.WriteLine(
+                            "Книга не добавлена! Возможно, ее не существует.\n");
                     }
                 }
-                else if(num == "Exit")
+                else if (string.Equals(
+                    num,
+                    "Exit",
+                    StringComparison.OrdinalIgnoreCase))
                 {
                     break;
                 }
                 else
                 {
                     Console.WriteLine("Введено не-число! Введите заново.\n");
-                    continue;
                 }
             }
         }
@@ -143,28 +168,34 @@ namespace bookStore.UI
         {
             while (true)
             {
-                Console.WriteLine("Введите Id желаемой книги: (нажмите Exit чтобы выйти из цикла)");
-                string num = Console.ReadLine()!;
+                Console.WriteLine(
+                    "Введите Id желаемой книги: (нажмите Exit чтобы выйти из цикла)");
+
+                string num = Console.ReadLine() ?? string.Empty;
+
                 if (int.TryParse(num, out int n))
                 {
-                    if(WWishList.wishList.Contains(WWishList.wishList.FirstOrDefault(b => b.Id == n)))
+                    if (WWishList.wishList.Any(b => b.Id == n))
                     {
                         WWishList.RemoveBook(n);
                         Console.WriteLine("Книга удалена!\n");
                     }
                     else
                     {
-                        Console.WriteLine("Книга не удалена! Возможно ее нет в корзине.\n");
+                        Console.WriteLine(
+                            "Книга не удалена! Возможно, ее нет в корзине.\n");
                     }
                 }
-                else if (num == "Exit")
+                else if (string.Equals(
+                    num,
+                    "Exit",
+                    StringComparison.OrdinalIgnoreCase))
                 {
                     break;
                 }
                 else
                 {
                     Console.WriteLine("Введено не-число! Введите заново.\n");
-                    continue;
                 }
             }
         }
@@ -174,30 +205,24 @@ namespace bookStore.UI
             Console.WriteLine("Введите адрес доставки:");
             string address = Console.ReadLine() ?? string.Empty;
 
-
             Console.WriteLine("Введите номер телефона:");
-            string input = Console.ReadLine() ?? string.Empty;
-            
+            string phoneNumber = Console.ReadLine() ?? string.Empty;
+
             Console.WriteLine("Введите email:");
-            string input2 = Console.ReadLine() ?? string.Empty;
-            
-            return new(address, input, input2);
+            string email = Console.ReadLine() ?? string.Empty;
+
+            return new Delivery(address, phoneNumber, email);
         }
 
-        private void SelectDiscount(DiscountBuilder builder,
-            List<SalesCard> salesCards,
-            List<AmountCoupon> amountCoupons,
-            List<PercentCoupon> percentCoupons)
+        private void SelectDiscount(DiscountBuilder builder)
         {
             while (true)
             {
-                Console.WriteLine("\nВыберите тип скидки: ");
-                Console.WriteLine("0. Без скидки");
-                Console.WriteLine("1. Скидочная карта");
-                Console.WriteLine("2. Купон на фиксированную сумму");
-                Console.WriteLine("3. Купон на процент");
-                Console.WriteLine("4. Очистить все скидки");
-                Console.WriteLine("5. Закончить выбор скидок");
+                Console.WriteLine("\nВыберите действие со скидками:");
+                Console.WriteLine("0. Закончить выбор скидок");
+                Console.WriteLine("1. Добавить скидочную карту");
+                Console.WriteLine("2. Добавить купон");
+                Console.WriteLine("3. Очистить все скидки");
 
                 if (!int.TryParse(Console.ReadLine(), out int choice))
                 {
@@ -211,112 +236,82 @@ namespace bookStore.UI
                         return;
 
                     case 1:
-                        Console.WriteLine("Введите номер телефона привязанный к карте:");
-
-                        string? cardNum = Console.ReadLine()?.Trim();
-
-                        SalesCard? card = salesCards.FirstOrDefault(c =>
-                            string.Equals(
-                                c.Number,
-                                cardNum,
-                                StringComparison.OrdinalIgnoreCase));
-
-                        if (card == null)
                         {
-                            Console.WriteLine("Карта не найдена");
+                            // Номер телефона уже получен при создании доставки.
+                            SalesCard? card =
+                                FileCardStore.FindCard(delivery.PhoneNumber);
+
+                            if (card == null)
+                            {
+                                Console.WriteLine(
+                                    "Скидочная карта для указанного номера телефона не найдена.");
+                                break;
+                            }
+
+                            SalesCard? previousCard = builder.SetSalesCard(card);
+
+                            if (previousCard == null)
+                            {
+                                Console.WriteLine(
+                                    "Скидка по карте успешно добавлена.");
+                            }
+                            else if (previousCard.Number == card.Number)
+                            {
+                                Console.WriteLine("Эта карта уже выбрана!");
+                            }
+                            else
+                            {
+                                Console.WriteLine(
+                                    $"Карта {previousCard.Number} заменена картой {card.Number}.");
+                            }
+
                             break;
                         }
-
-                        SalesCard? previousCard = builder.SetSalesCard(card);
-
-                        if(previousCard == null)
-                        {
-                            Console.WriteLine("Скидка по карте успешно применена.");
-
-                        }
-                        else if (previousCard.Number == card.Number)
-                        {
-                            Console.WriteLine("Эта карта уже выбрана!");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Карта {previousCard.Number} заменена картой {card.Number}.");
-                        }
-                        break;
 
                     case 2:
-                        Console.WriteLine("Введите название купона на фиксированную сумму:");
-
-                        string? amountName = Console.ReadLine()?.Trim();
-
-                        AmountCoupon? amountCoupon = amountCoupons.FirstOrDefault(c =>
-                            string.Equals(
-                                c.Name,
-                                amountName,
-                                StringComparison.OrdinalIgnoreCase));
-
-                        if (amountCoupon == null)
                         {
-                            Console.WriteLine("Купон не найден.");
+                            Console.WriteLine("Введите название купона:");
+
+                            string couponName =
+                                Console.ReadLine()?.Trim() ?? string.Empty;
+
+                            Coupon? coupon =
+                                FileCouponStore.FindCoupon(couponName);
+
+                            if (coupon == null)
+                            {
+                                Console.WriteLine("Купон не найден.");
+                                break;
+                            }
+
+                            bool wasAdded = builder.AddCoupon(
+                                coupon,
+                                out Coupon? replacedCoupon);
+
+                            if (!wasAdded)
+                            {
+                                Console.WriteLine(
+                                    "Этот купон уже добавлен или выбран.");
+                            }
+                            else if (replacedCoupon != null)
+                            {
+                                Console.WriteLine(
+                                    $"Процентный купон {replacedCoupon.Name} " +
+                                    $"заменён купоном {coupon.Name}.");
+                            }
+                            else
+                            {
+                                Console.WriteLine(
+                                    $"Купон {coupon.Name} успешно добавлен.");
+                            }
+
                             break;
                         }
-
-                        if (builder.AddAmountCoupon(amountCoupon))
-                        {
-                            Console.WriteLine($"Купон {amountCoupon.Name} добавлен.");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Этот купон уже добавлен.");
-                        }
-
-                        break;
 
                     case 3:
-                        Console.WriteLine("Введите название процентного купона:");
-
-                        string? percentName = Console.ReadLine()?.Trim();
-
-                        PercentCoupon? percentCoupon = percentCoupons.FirstOrDefault(c =>
-                            string.Equals(
-                                c.Name,
-                                percentName,
-                                StringComparison.OrdinalIgnoreCase));
-
-                        if (percentCoupon == null)
-                        {
-                            Console.WriteLine("Купон не найден.");
-                            break;
-                        }
-
-                        bool wasAdded = builder.SetPercentCoupon(
-                            percentCoupon,
-                            out PercentCoupon? replacedCoupon);
-
-                        if (!wasAdded)
-                        {
-                            Console.WriteLine("Этот процентный купон уже выбран.");
-                        }
-                        else if (replacedCoupon != null)
-                        {
-                            Console.WriteLine(
-                                $"Процентный купон {replacedCoupon.Name} заменён купоном {percentCoupon.Name}.");
-                        }
-                        else
-                        {
-                            Console.WriteLine(
-                                $"Процентный купон {percentCoupon.Name} добавлен.");
-                        }
-
-                        break;
-
-                    case 4:
                         builder.Clear();
                         Console.WriteLine("Все скидки очищены.");
                         break;
-
-                    case 5:
-                        return;
 
                     default:
                         Console.WriteLine("Такого пункта меню нет.");
@@ -328,21 +323,27 @@ namespace bookStore.UI
         private Order CreateOrder()
         {
             delivery = CreateDelivery();
-            CompositeDiscount composite = new();
-            DiscountBuilder builder = new(composite);
 
-            SelectDiscount(builder,
-                salesCards,
-                FileCouponStore.amountCoupons,
-                FileCouponStore.percentCoupons);
+            DiscountBuilder builder = new();
+
+            SelectDiscount(builder);
+
+            var discountValues = builder.GetDiscountValues();
 
             SelectedCouponNames = builder.GetUsedCouponNames();
+
+            string discountDescription =
+                builder.GetDiscountDescription();
 
             return new Order(
                 WWishList,
                 delivery,
-                builder.Build()
-                );
+                builder.Build(),
+                discountValues.SalesCardPercent,
+                discountValues.CouponPercent,
+                discountValues.AmountDiscounts,
+                discountDescription
+            );
         }
     }
 }

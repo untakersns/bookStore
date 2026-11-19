@@ -5,7 +5,7 @@ namespace bookStore.Entities
     public class Delivery(string address, string phoneNumber, string email)
     {
         private string Address { get; set; } = address;
-        private string PhoneNumber { get; set; } = phoneNumber;
+        public string PhoneNumber { get; set; } = phoneNumber;
         private string Email { get; set; } = email;
         public decimal DeliveryCost { get; private set; } = 500.0m;
 

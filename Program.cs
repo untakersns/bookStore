@@ -19,7 +19,12 @@ internal class Program
         fileCouponStore.FillCoupons();
         WishList wishList = new();
 
-        ConsoleUI consoleUI = new(fileCouponStore, books, fileCardStore.salesCards, wishList);
+        ConsoleUI consoleUI = new(
+                fileCouponStore,
+                fileCardStore,
+                books,
+                wishList);
+
         consoleUI.Run();
     }
 }
