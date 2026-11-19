@@ -85,23 +85,12 @@ namespace bookStore.UI
                             Console.WriteLine(
                                 "Заказ успешно создан!\n" + orderInput);
 
-                            // Удаляем купоны только после подтверждения заказа.
                             if (SelectedCouponNames.Count > 0)
                             {
-                                try
-                                {
-                                    int removedCount =
-                                        FileCouponStore.RemoveCoupon(SelectedCouponNames);
+                                int removedCount =
+                                    FileCouponStore.RemoveCoupon(SelectedCouponNames);
 
-                                    Console.WriteLine(
-                                        $"Удалено {removedCount} использованных купонов.");
-                                }
-                                catch
-                                {
-                                    Console.WriteLine(
-                                        "Не удалось удалить использованные купоны.");
-                                    break;
-                                }
+                                Console.WriteLine($"Удалено {removedCount} использованных купонов.");
 
                                 SelectedCouponNames.Clear();
                             }
@@ -115,7 +104,6 @@ namespace bookStore.UI
                         {
                             Console.WriteLine("Создание заказа отменено.");
 
-                            // При отмене купоны остаются в файле.
                             SelectedCouponNames.Clear();
                         }
 
@@ -168,8 +156,7 @@ namespace bookStore.UI
         {
             while (true)
             {
-                Console.WriteLine(
-                    "Введите Id желаемой книги: (нажмите Exit чтобы выйти из цикла)");
+                Console.WriteLine("Введите Id желаемой книги: (нажмите Exit чтобы выйти из цикла)");
 
                 string num = Console.ReadLine() ?? string.Empty;
 

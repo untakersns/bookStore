@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -96,8 +95,8 @@ namespace bookStore.Entities
             return new CompositeDiscount(strategies);
         }
 
-        public (decimal? SalesCardPercent, decimal? CouponPercent,
-            List<decimal> AmountDiscounts) GetDiscountValues()
+        public (decimal? SalesCardPercent, decimal? CouponPercent, List<decimal> AmountDiscounts)
+            GetDiscountValues()
         {
             return (
                 salesCard?.SalesAmount,
