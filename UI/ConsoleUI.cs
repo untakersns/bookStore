@@ -267,7 +267,7 @@ namespace bookStore.UI
                         if (!wasAdded)
                         {
                             Console.WriteLine(
-                                "Купон не найден или уже добавлен.");
+                                "Купон не удалось добавить (не найден или уже добавлен)!");
                         }
                         else if (replacedCoupon != null)
                         {

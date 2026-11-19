@@ -1,5 +1,4 @@
 ﻿using bookStore.Entities;
-using System.Collections.Generic;
 
 namespace bookStore.Logic
 {
@@ -7,11 +6,6 @@ namespace bookStore.Logic
     {
         private readonly DiscountBuilder DiscountBuilder = discountBuilder;
         private readonly FileCouponStore CouponStore = couponStore;
-
-        public bool TryAddCoupon(string name)
-        {
-            return TryAddCoupon(name, out _);
-        }
 
         public bool TryAddCoupon(
             string name,
@@ -25,6 +19,9 @@ namespace bookStore.Logic
             Coupon? coupon = CouponStore.FindCoupon(name.Trim());
 
             if (coupon == null)
+                return false;
+
+            if (CouponStore.amountCoupons.Contains(coupon) || CouponStore.percentCoupons.Contains(coupon))
                 return false;
 
             return DiscountBuilder.AddCoupon(
