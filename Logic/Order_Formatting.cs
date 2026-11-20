@@ -25,7 +25,7 @@ namespace bookStore.Logic
                     books.Add($"{book.Name} | {book.Price} руб");
                 }
             }
-            return "Информация о доставке: \n\n" +
+            return "Информация о заказе: \n\n" +
                 $"{string.Join('\n', books)}\n" +
                 $"Итого: {Order.WishList.CalculateWishlist().ToString()}\n" +
                 $"Скидка {Order.DiscountDescription} {Order.DiscountAmount}\n" + 
