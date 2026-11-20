@@ -13,16 +13,14 @@ namespace bookStore.UI
         List<Book> books,
         WishList wishList,
         decimal pickupCost,
-        string pickupPoint,
         decimal courierCost)
     {
         private readonly FileCouponStore FileCouponStore = fileCouponStore;
         private readonly FileCardStore FileCardStore = fileCardStore;
         private readonly List<Book> Books = books;
-
         private WishList WWishList = wishList;
+        private const string pickupPoint = "ул. Пушкина, д. Колотушкина, 13";
         private Delivery delivery = new PickupDelivery(pickupCost, string.Empty, string.Empty, string.Empty);
-
         private List<string> SelectedCouponNames = [];
 
         public void Run()
@@ -225,6 +223,7 @@ namespace bookStore.UI
                 switch (choice)
                 {
                     case 1:
+                        Console.WriteLine("Ваш пункт выдачи книг: " + pickupPoint);
                         return new PickupDelivery(pickupCost, address, phoneNumber, email);
 
                     case 2 when isMinsk:

@@ -8,7 +8,6 @@ internal class Program
     const string salesCardsPath = @"files\salesCards.txt";
     const string couponPath = @"files\coupons.txt";
     const decimal pickupCost = 0m;
-    const string pickupPoint = "ул. Пушкина, д. Колотушкина, 13";
     const decimal courierCost = 10m;
     private static void Main(string[] args)
     {
@@ -28,7 +27,6 @@ internal class Program
                 books,
                 wishList,
                 pickupCost,
-                pickupPoint,
                 courierCost);
 
         consoleUI.Run();
