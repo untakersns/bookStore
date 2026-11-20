@@ -13,6 +13,7 @@ namespace bookStore.UI
         List<Book> books,
         WishList wishList,
         decimal pickupCost,
+        string pickupPoint,
         decimal courierCost)
     {
         private readonly FileCouponStore FileCouponStore = fileCouponStore;
