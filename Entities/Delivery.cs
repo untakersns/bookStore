@@ -40,16 +40,16 @@ namespace bookStore.Entities
         }
     }
 
-    public class PickupDelivery(string address, string phoneNumber, string email)
+    public class PickupDelivery(decimal cost, string address, string phoneNumber, string email)
         : Delivery(address, phoneNumber, email)
     {
-        public override decimal CalculateDeliveryCost() => 0m;
+        public override decimal CalculateDeliveryCost() => cost;
     }
-    public class CourierDelivery(string address, string phoneNumber, string email)
+    public class CourierDelivery(decimal cost, string address, string phoneNumber, string email)
         : Delivery(address, phoneNumber, email)
     {
         public static bool IsMinsk(string address) => address.Contains("Минск", StringComparison.OrdinalIgnoreCase);
-        public override decimal CalculateDeliveryCost() => 10m;
+        public override decimal CalculateDeliveryCost() => cost;
     }
     public class PostDelivery(string address, string phoneNumber, string email, int booksCount)
         : Delivery(address, phoneNumber, email)

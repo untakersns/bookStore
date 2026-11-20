@@ -11,14 +11,16 @@ namespace bookStore.UI
         FileCouponStore fileCouponStore,
         FileCardStore fileCardStore,
         List<Book> books,
-        WishList wishList)
+        WishList wishList,
+        decimal pickupCost,
+        decimal courierCost)
     {
         private readonly FileCouponStore FileCouponStore = fileCouponStore;
         private readonly FileCardStore FileCardStore = fileCardStore;
         private readonly List<Book> Books = books;
 
         private WishList WWishList = wishList;
-        private Delivery delivery = new PickupDelivery(string.Empty, string.Empty, string.Empty);
+        private Delivery delivery = new PickupDelivery(pickupCost, string.Empty, string.Empty, string.Empty);
 
         private List<string> SelectedCouponNames = [];
 
@@ -222,10 +224,10 @@ namespace bookStore.UI
                 switch (choice)
                 {
                     case 1:
-                        return new PickupDelivery(address, phoneNumber, email);
+                        return new PickupDelivery(pickupCost, address, phoneNumber, email);
 
                     case 2 when isMinsk:
-                        return new CourierDelivery(address, phoneNumber, email);
+                        return new CourierDelivery(courierCost, address, phoneNumber, email);
                     case 2 when !isMinsk:
                         return new PostDelivery(address, phoneNumber, email, WWishList.wishList.Count);
 

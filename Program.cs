@@ -7,6 +7,8 @@ internal class Program
     const string booksPath = @"files\books.txt";
     const string salesCardsPath = @"files\salesCards.txt";
     const string couponPath = @"files\coupons.txt";
+    const decimal pickupCost = 0m;
+    const decimal courierCost = 10m;
 
     private static void Main(string[] args)
     {
@@ -15,15 +17,18 @@ internal class Program
         FileCouponStore fileCouponStore = new(couponPath);
 
         List<Book> books = fileLoadCatalog.LoadAll();
+        WishList wishList = new();
         fileCardStore.FillCards();
         fileCouponStore.FillCoupons();
-        WishList wishList = new();
+        
 
         ConsoleUI consoleUI = new(
                 fileCouponStore,
                 fileCardStore,
                 books,
-                wishList);
+                wishList,
+                pickupCost,
+                courierCost);
 
         consoleUI.Run();
     }
