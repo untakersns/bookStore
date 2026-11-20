@@ -252,36 +252,22 @@ namespace bookStore.UI
                         }
                         
                         break;
-                        
+
 
                     case 2:
-                        Console.WriteLine("Введите название купона:");
+                         Console.WriteLine("Введите название купона:");
 
-                        string couponName =
-                            Console.ReadLine()?.Trim() ?? string.Empty;
+                         string couponName =
+                             Console.ReadLine() ?? string.Empty;
 
-                        bool wasAdded = discountFabric.TryAddCoupon(
-                            couponName,
-                            out Coupon? replacedCoupon);
+                         discountFabric.TryAddCoupon(
+                             couponName,
+                             out _,
+                             out string message);
 
-                        if (!wasAdded)
-                        {
-                            Console.WriteLine(
-                                "Купон не удалось добавить (не найден или уже добавлен)!");
-                        }
-                        else if (replacedCoupon != null)
-                        {
-                            Console.WriteLine(
-                                $"Процентный купон {replacedCoupon.Name} " +
-                                $"заменён новым купоном {couponName}.");
-                        }
-                        else
-                        {
-                            Console.WriteLine(
-                                $"Купон {couponName} успешно добавлен.");
-                        }
+                         Console.WriteLine(message);
 
-                        break;
+                         break;
 
                     case 3:
                         builder.Clear();
