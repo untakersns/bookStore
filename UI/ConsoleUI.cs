@@ -18,7 +18,7 @@ namespace bookStore.UI
         private readonly List<Book> Books = books;
 
         private WishList WWishList = wishList;
-        private Delivery delivery = new(string.Empty, string.Empty, string.Empty);
+        private Delivery delivery = new PickupDelivery(string.Empty, string.Empty, string.Empty);
 
         private List<string> SelectedCouponNames = [];
 
@@ -193,15 +193,53 @@ namespace bookStore.UI
             string address = Console.ReadLine() ?? string.Empty;
 
             Console.WriteLine("Введите номер телефона:");
-            string phoneNumber = Console.ReadLine() ?? string.Empty;
+            string phoneNumber = Delivery.TryAddNumber(Console.ReadLine()!) ?? string.Empty;
 
             Console.WriteLine("Введите email:");
-            string email = Console.ReadLine() ?? string.Empty;
+            string email = Delivery.TryAddEmail(Console.ReadLine()!) ?? string.Empty;
 
-            return new Delivery(address, phoneNumber, email);
+            bool isMinsk = address.Contains("Минск", StringComparison.OrdinalIgnoreCase);
+
+            while (true)
+            {
+                Console.WriteLine("\nВыберите способ доставки:");
+                Console.WriteLine("1. Самовывоз");
+                if (isMinsk)
+                {
+                    Console.WriteLine("2. Курьер по Минску");
+                    Console.WriteLine("3. Почта");
+                }
+                else
+                {
+                    Console.WriteLine("2. Почта");
+                }
+                if(!int.TryParse(Console.ReadLine()!, out int choice))
+                {
+                    Console.WriteLine("Неправильный ввод!");
+                    continue;
+                }
+
+                switch (choice)
+                {
+                    case 1:
+                        return new PickupDelivery(address, phoneNumber, email);
+
+                    case 2 when isMinsk:
+                        return new CourierDelivery(address, phoneNumber, email);
+                    case 2 when !isMinsk:
+                        return new PostDelivery(address, phoneNumber, email, WWishList.wishList.Count);
+
+                    case 3 when isMinsk:
+                        return new PostDelivery(address, phoneNumber, email, WWishList.wishList.Count);
+
+                    default:
+                        Console.WriteLine("Такого пункта нет");
+                        break;
+                }
+            }
         }
 
-        private void SelectDiscount(DiscountBuilder builder, DiscountFabric discountFabric)
+        private void SelectDiscount(DiscountBuilder builder, DiscountFabric discountFabric, string phoneNumber)
         {
             while (true)
             {
@@ -225,7 +263,7 @@ namespace bookStore.UI
                     case 1:
                         // Номер телефона уже получен при создании доставки.
                         SalesCard? card =
-                            FileCardStore.FindCard(delivery.PhoneNumber);
+                            FileCardStore.FindCard(phoneNumber);
                         
                         if (card == null)
                         {
@@ -291,7 +329,7 @@ namespace bookStore.UI
                 builder,
                 FileCouponStore);
 
-            SelectDiscount(builder, discountFabric);
+            SelectDiscount(builder, discountFabric, delivery.PhoneNumber);
 
             var discountValues = builder.GetDiscountValues();
 

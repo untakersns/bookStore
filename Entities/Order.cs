@@ -70,7 +70,7 @@ namespace bookStore.Entities
 
         public decimal Result()
         {
-            return CalculateDiscountedPrice() + Delivery.DeliveryCost;
+            return CalculateDiscountedPrice() + Delivery.CalculateDeliveryCost();
         }
 
         public static decimal CalculateOrder(Order currentOrder)

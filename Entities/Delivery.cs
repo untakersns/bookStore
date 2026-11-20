@@ -2,13 +2,13 @@
 
 namespace bookStore.Entities
 {
-    public class Delivery(string address, string phoneNumber, string email)
+    public abstract class Delivery(string address, string phoneNumber, string email)
     {
         private string Address { get; set; } = address;
-        public string PhoneNumber { get; set; } = phoneNumber;
+        public string PhoneNumber { get; } = phoneNumber;
         private string Email { get; set; } = email;
-        public decimal DeliveryCost { get; private set; } = 500.0m;
-
+        public decimal DeliveryCost => CalculateDeliveryCost();
+        public abstract decimal CalculateDeliveryCost();
         public static string TryAddNumber(string input)
         {
             if (Regex.IsMatch(input, @"^\+375\(0[\d]{2}\)[\d]{3}-[\d]{2}-[\d]{2}$") ||
@@ -37,5 +37,21 @@ namespace bookStore.Entities
         {
             return $"Адрес: {Address}, Номер телефона: {PhoneNumber}, Email: {Email}, Стоимость доставки: {DeliveryCost}";
         }
+    }
+
+    public class PickupDelivery(string address, string phoneNumber, string email)
+        : Delivery(address, phoneNumber, email)
+    {
+        public override decimal CalculateDeliveryCost() => 0m;
+    }
+    public class CourierDelivery(string address, string phoneNumber, string email)
+        : Delivery(address, phoneNumber, email)
+    {
+        public override decimal CalculateDeliveryCost() => 10m;
+    }
+    public class PostDelivery(string address, string phoneNumber, string email, int booksCount)
+        : Delivery(address, phoneNumber, email)
+    {
+        public override decimal CalculateDeliveryCost() => 5m + 2m * booksCount;
     }
 }
