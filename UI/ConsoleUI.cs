@@ -13,13 +13,13 @@ namespace bookStore.UI
         List<Book> books,
         WishList wishList,
         decimal pickupCost,
+        string pickupPoint,
         decimal courierCost)
     {
         private readonly FileCouponStore FileCouponStore = fileCouponStore;
         private readonly FileCardStore FileCardStore = fileCardStore;
         private readonly List<Book> Books = books;
         private WishList WWishList = wishList;
-        private const string pickupPoint = "ул. Пушкина, д. Колотушкина, 13";
         private Delivery delivery = new PickupDelivery(pickupCost, string.Empty, string.Empty, string.Empty);
         private List<string> SelectedCouponNames = [];
 
@@ -228,11 +228,16 @@ namespace bookStore.UI
 
                     case 2 when isMinsk:
                         return new CourierDelivery(courierCost, address, phoneNumber, email);
+
                     case 2 when !isMinsk:
-                        return new PostDelivery(address, phoneNumber, email, WWishList.wishList.Count);
+                        Console.WriteLine("Введите свой почтовый индекс на который будет отправлен заказ: ");
+                        int postIndex = PostDelivery.TryAddPostIndex(int.Parse(Console.ReadLine()!));
+                        return new PostDelivery(address, postIndex, phoneNumber, email, WWishList.wishList.Count);
 
                     case 3 when isMinsk:
-                        return new PostDelivery(address, phoneNumber, email, WWishList.wishList.Count);
+                        Console.WriteLine("Введите свой почтовый индекс на который будет отправлен заказ: ");
+                        int postIndex1 = PostDelivery.TryAddPostIndex(int.Parse(Console.ReadLine()!));
+                        return new PostDelivery(address, postIndex1, phoneNumber, email, WWishList.wishList.Count);
 
                     default:
                         Console.WriteLine("Такого пункта нет");

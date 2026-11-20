@@ -51,9 +51,21 @@ namespace bookStore.Entities
         public static bool IsMinsk(string address) => address.Contains("Минск", StringComparison.OrdinalIgnoreCase);
         public override decimal CalculateDeliveryCost() => cost;
     }
-    public class PostDelivery(string address, string phoneNumber, string email, int booksCount)
+    public class PostDelivery(string address, int postIndex, string phoneNumber, string email, int booksCount)
         : Delivery(address, phoneNumber, email)
     {
+        public int PostIndex = postIndex;
+        public static int TryAddPostIndex(int input)
+        {
+            if (Regex.IsMatch(input.ToString(), @"^\d{6}$"))
+            {
+                return input;
+            }
+            else
+            {
+                return 000000;
+            }
+        }
         public override decimal CalculateDeliveryCost() => 5m + 2m * booksCount;
     }
 }

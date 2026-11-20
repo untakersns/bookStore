@@ -9,6 +9,7 @@ internal class Program
     const string couponPath = @"files\coupons.txt";
     const decimal pickupCost = 0m;
     const decimal courierCost = 10m;
+    const string pickupPoint = "ул. Пушкина, д. Колотушкина, 13";
     private static void Main(string[] args)
     {
         FileLoadCatalog fileLoadCatalog = new(booksPath);
@@ -20,13 +21,13 @@ internal class Program
         fileCardStore.FillCards();
         fileCouponStore.FillCoupons();
         
-
         ConsoleUI consoleUI = new(
                 fileCouponStore,
                 fileCardStore,
                 books,
                 wishList,
                 pickupCost,
+                pickupPoint,
                 courierCost);
 
         consoleUI.Run();
