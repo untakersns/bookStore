@@ -33,6 +33,7 @@ namespace bookStore.Entities
                 return string.Empty;
             }
         }
+        
         public override string ToString()
         {
             return $"Адрес: {Address}, Номер телефона: {PhoneNumber}, Email: {Email}, Стоимость доставки: {DeliveryCost}";
@@ -47,6 +48,7 @@ namespace bookStore.Entities
     public class CourierDelivery(string address, string phoneNumber, string email)
         : Delivery(address, phoneNumber, email)
     {
+        public static bool IsMinsk(string address) => address.Contains("Минск", StringComparison.OrdinalIgnoreCase);
         public override decimal CalculateDeliveryCost() => 10m;
     }
     public class PostDelivery(string address, string phoneNumber, string email, int booksCount)

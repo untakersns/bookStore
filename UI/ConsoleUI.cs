@@ -198,7 +198,7 @@ namespace bookStore.UI
             Console.WriteLine("Введите email:");
             string email = Delivery.TryAddEmail(Console.ReadLine()!) ?? string.Empty;
 
-            bool isMinsk = address.Contains("Минск", StringComparison.OrdinalIgnoreCase);
+            bool isMinsk = CourierDelivery.IsMinsk(address);
 
             while (true)
             {
